@@ -1,6 +1,7 @@
 "use client";
 
 import { CartToast } from "@/components/cart-toast";
+import { sendContactMessage } from "@/lib/send-contact";
 import { showStoreAlert } from "@/lib/store-alerts";
 import { FormEvent, useCallback, useState } from "react";
 
@@ -40,17 +41,7 @@ export default function ContactFormSection() {
 
     setSubmitting(true);
     try {
-      const response = await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const json = (await response.json()) as { error?: string };
-
-      if (!response.ok) {
-        throw new Error(json.error ?? "Unable to send your message.");
-      }
-
+      await sendContactMessage(payload);
       form.reset();
       setToastVisible(true);
     } catch (error) {
