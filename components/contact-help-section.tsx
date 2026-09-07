@@ -5,23 +5,27 @@ import { useState } from "react";
 type ContactHelpItem = {
   title: string;
   details: string;
+  email: string;
 };
 
 const helpItems: ContactHelpItem[] = [
   {
     title: "General Inquiries",
     details:
-      "For general inquiries, please contact support@greatstonedragon.com",
+      "For general inquiries, please contact",
+    email: "support@greatstonedragon.com",
   },
   {
     title: "Fantasy Presales",
     details:
-      "For fantasy presale questions, timeline updates, or preorder support, please contact presales@greatstonedragon.com",
+      "For questions about fantasy presale please contact",
+    email: "fantasy.presales@greatstonedragon.com",
   },
   {
     title: "Shipping Inquiries",
     details:
-      "For shipping updates, delivery issues, or address changes, please contact shipping@greatstonedragon.com",
+      "For questions about shipping please contact",
+    email: "shipping@greatstonedragon.com",
   },
 ];
 
@@ -80,7 +84,10 @@ export default function ContactHelpSection() {
 
                 {isOpen ? (
                   <p className="pb-4 pr-2 text-sm leading-relaxed text-[#737373] sm:pr-6 sm:text-base md:pr-8 md:text-lg">
-                    {item.details}
+                    {item.details} {" "}
+                    <a href={`mailto:${item.email}`} className="underline!">
+                      {item.email}
+                    </a>
                   </p>
                 ) : null}
               </div>
