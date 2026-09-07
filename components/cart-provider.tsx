@@ -362,6 +362,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         count={toast.count}
         visible={toast.visible}
         onDismiss={dismissToast}
+        action={{ href: "/cart", label: "View cart" }}
       />
     </CartContext.Provider>
   );

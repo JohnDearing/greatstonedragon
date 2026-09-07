@@ -5,22 +5,35 @@ import { useEffect } from "react";
 
 type CartToastProps = {
   message: string;
-  count: number;
+  count?: number;
+  description?: string;
   visible: boolean;
   onDismiss: () => void;
+  action?: {
+    href: string;
+    label: string;
+  };
 };
 
 export function CartToast({
   message,
   count,
+  description,
   visible,
   onDismiss,
+  action,
 }: CartToastProps) {
   useEffect(() => {
     if (!visible) return;
     const timer = window.setTimeout(onDismiss, 4200);
     return () => window.clearTimeout(timer);
   }, [visible, onDismiss]);
+
+  const detail =
+    description ??
+    (typeof count === "number"
+      ? `${count} item${count === 1 ? "" : "s"} in your cart`
+      : null);
 
   return (
     <div
@@ -35,13 +48,13 @@ export function CartToast({
         </span>
         <div className="cart-toast-copy">
           <strong>{message}</strong>
-          <span>
-            {count} item{count === 1 ? "" : "s"} in your cart
-          </span>
+          {detail ? <span>{detail}</span> : null}
         </div>
-        <Link href="/cart" className="cart-toast-action" onClick={onDismiss}>
-          View cart
-        </Link>
+        {action ? (
+          <Link href={action.href} className="cart-toast-action" onClick={onDismiss}>
+            {action.label}
+          </Link>
+        ) : null}
         <button
           type="button"
           className="cart-toast-close"
