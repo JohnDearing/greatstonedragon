@@ -28,6 +28,29 @@ function escapeHtml(value: string) {
     .replaceAll('"', "&quot;");
 }
 
+function isUsableResendKey(key?: string) {
+  return Boolean(key && /^re_[A-Za-z0-9]+/.test(key) && !key.includes("your_resend"));
+}
+
+function requestOrigin(request: Request) {
+  const headerOrigin = request.headers.get("origin")?.replace(/\/$/, "");
+  if (headerOrigin) return headerOrigin;
+
+  const referer = request.headers.get("referer");
+  if (referer) {
+    try {
+      return new URL(referer).origin;
+    } catch {
+      /* ignore */
+    }
+  }
+
+  return (
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+    "https://www.greatstonedragon.com"
+  );
+}
+
 async function sendViaResend({
   apiKey,
   email,
@@ -58,62 +81,92 @@ async function sendViaResend({
   }
 }
 
+async function readFormSubmitResponse(response: Response) {
+  const raw = await response.text();
+  try {
+    return {
+      raw,
+      json: JSON.parse(raw) as { success?: string | boolean; message?: string },
+    };
+  } catch {
+    return { raw, json: null };
+  }
+}
+
+function formSubmitSucceeded(
+  response: Response,
+  json: { success?: string | boolean; message?: string } | null,
+  raw: string,
+) {
+  if (json) {
+    return (
+      json.success === true ||
+      json.success === "true" ||
+      /activation|sent|success/i.test(json.message ?? "")
+    );
+  }
+
+  return response.ok && /activation|sent|success|thank/i.test(raw);
+}
+
 async function sendViaFormSubmit({
+  origin,
   firstName,
   lastName,
   email,
   subject,
   message,
 }: {
+  origin: string;
   firstName: string;
   lastName: string;
   email: string;
   subject: string;
   message: string;
 }) {
-  const origin =
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "http://localhost:3000";
+  const payload = {
+    name: `${firstName} ${lastName}`,
+    email,
+    firstName,
+    lastName,
+    subject,
+    message,
+    _replyto: email,
+    _subject: `[Contact] ${subject}`,
+    _template: "table",
+    _captcha: "false",
+  };
+
+  const headers = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+    Origin: origin,
+    Referer: `${origin}/contact`,
+    "User-Agent":
+      "Mozilla/5.0 (compatible; GreatStoneDragonContact/1.0; +https://www.greatstonedragon.com)",
+  };
 
   const response = await fetch(
     `https://formsubmit.co/ajax/${CONTACT_TO_EMAIL}`,
     {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        Origin: origin,
-        Referer: `${origin}/contact`,
-      },
-      body: JSON.stringify({
-        name: `${firstName} ${lastName}`,
-        email,
-        firstName,
-        lastName,
-        subject,
-        message,
-        _replyto: email,
-        _subject: `[Contact] ${subject}`,
-        _template: "table",
-        _captcha: "false",
-      }),
+      headers,
+      body: JSON.stringify(payload),
     },
   );
 
-  const json = (await response.json()) as {
-    success?: string | boolean;
-    message?: string;
-  };
+  const { json, raw } = await readFormSubmitResponse(response);
+  const ok = formSubmitSucceeded(response, json, raw);
 
-  const activated =
-    json.success === true ||
-    json.success === "true" ||
-    /activation/i.test(json.message ?? "");
-
-  if (!activated) {
-    console.error("FormSubmit contact failed", json);
+  if (!ok) {
+    console.error("FormSubmit contact failed", {
+      status: response.status,
+      json,
+      raw: raw.slice(0, 500),
+    });
   }
 
-  return activated;
+  return ok;
 }
 
 export async function POST(request: Request) {
@@ -169,14 +222,27 @@ export async function POST(request: Request) {
     <p>${escapeHtml(message).replaceAll("\n", "<br />")}</p>
   `;
 
-  try {
-    const apiKey = process.env.RESEND_API_KEY;
-    if (apiKey) {
-      await sendViaResend({ apiKey, email, emailSubject, text, html });
-      return NextResponse.json({ ok: true });
-    }
+  const origin = requestOrigin(request);
+  const apiKey = process.env.RESEND_API_KEY;
 
+  if (isUsableResendKey(apiKey)) {
+    try {
+      await sendViaResend({
+        apiKey: apiKey as string,
+        email,
+        emailSubject,
+        text,
+        html,
+      });
+      return NextResponse.json({ ok: true });
+    } catch (error) {
+      console.error("Resend contact failed, trying FormSubmit", error);
+    }
+  }
+
+  try {
     const sent = await sendViaFormSubmit({
+      origin,
       firstName,
       lastName,
       email,

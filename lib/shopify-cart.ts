@@ -110,6 +110,21 @@ type CartNode = {
   };
 };
 
+function publicCheckoutUrl(url: string) {
+  const storefront = process.env.SHOPIFY_STOREFRONT_URL?.replace(/\/$/, "");
+  if (!storefront || !url) return url;
+
+  try {
+    const next = new URL(url);
+    const dest = new URL(storefront);
+    next.protocol = dest.protocol;
+    next.host = dest.host;
+    return next.toString();
+  } catch {
+    return url;
+  }
+}
+
 function mapCart(
   node: CartNode | null | undefined,
   warnings?: ShopifyCartWarning[],
@@ -153,7 +168,7 @@ function mapCart(
 
   return {
     id: node.id,
-    checkoutUrl: node.checkoutUrl,
+    checkoutUrl: publicCheckoutUrl(node.checkoutUrl),
     totalQuantity: node.totalQuantity,
     subtotal: Number(node.cost?.subtotalAmount?.amount ?? 0),
     currencyCode:

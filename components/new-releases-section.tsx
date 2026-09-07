@@ -89,16 +89,13 @@ function releasePrice(product: Product) {
 export function NewReleasesSection({ products }: { products: Product[] }) {
   const sectionRef = useRef<HTMLElement>(null);
 
-  const items = Array.from({ length: 4 }, (_, index) => {
-    const live = products[index];
-    const fallback = placeholderReleases[index];
-    if (!live) return fallback;
-    return {
-      ...live,
-      image: live.image || fallbackArt[index],
-      badge: live.badge ?? "New",
-    };
-  });
+  const items = (products.length ? products.slice(0, 4) : placeholderReleases).map(
+    (product, index) => ({
+      ...product,
+      image: product.image || fallbackArt[index],
+      badge: product.badge ?? "New",
+    }),
+  );
 
   useLayoutEffect(() => {
     const section = sectionRef.current;
@@ -201,6 +198,8 @@ export function NewReleasesSection({ products }: { products: Product[] }) {
                   alt={product.name}
                   width={640}
                   height={640}
+                  sizes="(max-width: 760px) 70vw, (max-width: 1100px) 30vw, 240px"
+                  style={{ objectFit: "cover" }}
                 />
                 {product.badge ? <em>{product.badge}</em> : null}
               </Link>

@@ -1,61 +1,64 @@
 "use client";
 
+import { ProductImage } from "@/components/product-image";
 import { prefersReducedMotion, registerGsap } from "@/lib/gsap-client";
-import Image from "next/image";
 import Link from "next/link";
 import { useLayoutEffect, useRef } from "react";
 
-const collections = [
-  {
-    title: "Fantasy",
-    heading: "Fantasy",
-    image: "/images/home/collectionCard1.png",
-    href: "/products?collection=fantasy",
-    variant: "fantasy",
-  },
-  {
-    title: "New Releases",
-    heading: (
-      <>
-        New
-        <br />
-        Releases
-      </>
-    ),
-    image: "/images/home/collectionCard2.png",
-    href: "/products?collection=new-releases",
-    variant: "releases",
-  },
-  {
-    title: "Inter Preorder",
-    heading: (
-      <>
-        Inter
-        <br />
-        Preorder
-      </>
-    ),
-    image: "/images/home/collectionCard3.png",
-    href: "/products?collection=international-preorder",
-    variant: "preorder",
-  },
-  {
-    title: "Sticker And Accessories",
-    heading: (
-      <>
-        Stickers &
-        <br />
-        Accessories
-      </>
-    ),
-    image: "/images/home/collectionCard4.png",
-    href: "/products?category=stickers",
-    variant: "stickers",
-  },
-];
+function getCollections() {
+  return [
+    {
+      title: "Fantasy",
+      heading: "Fantasy",
+      image: "/images/home/IMG-20260907-WA0016-removebg-preview.png",
+      href: "/products?collection=fantasy",
+      variant: "fantasy",
+    },
+    {
+      title: "New Releases",
+      heading: (
+        <>
+          New
+          <br />
+          Releases
+        </>
+      ),
+      image: "/images/home/IMG-20260907-WA0017-removebg-preview.png",
+      href: "/products?collection=new-releases",
+      variant: "releases",
+    },
+    {
+      title: "International Preorder",
+      heading: (
+        <>
+          International
+          <br />
+          Preorder
+        </>
+      ),
+      image: "/images/home/IMG-20260907-WA0015-removebg-preview.png",
+      href: "/products?collection=international-preorder",
+      variant: "preorder",
+    },
+    {
+      title: "Trading Accessories",
+      heading: (
+        <>
+          Trading
+          <br />
+          Accessories
+        </>
+      ),
+      image: "/images/home/collectionCard4.png",
+      href: "/products?collection=accessories",
+      variant: "accessories",
+    },
+  ];
+}
 
 export function ShopCollectionsSection() {
   const sectionRef = useRef<HTMLElement>(null);
+  const collections = getCollections();
 
   useLayoutEffect(() => {
     const section = sectionRef.current;
@@ -150,7 +153,7 @@ export function ShopCollectionsSection() {
                 <em>Shop Now</em>
               </span>
               <span className="shopcol-art">
-                <Image
+                <ProductImage
                   src={collection.image}
                   alt=""
                   fill

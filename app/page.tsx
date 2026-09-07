@@ -15,7 +15,14 @@ export default async function Home() {
   const newReleases = catalog.filter(
     (item) => item.collection === "new-releases" || item.badge === "New",
   );
-  const featured = (newReleases.length ? newReleases : catalog).slice(0, 4);
+  const featured: typeof catalog = [];
+  const featuredIds = new Set<string>();
+  for (const item of [...newReleases, ...catalog]) {
+    if (featured.length >= 4) break;
+    if (featuredIds.has(item.id)) continue;
+    featuredIds.add(item.id);
+    featured.push(item);
+  }
   const favorites = catalog
     .filter((item) => item.badge === "Best Seller" || item.collection === "fantasy")
     .concat(catalog)

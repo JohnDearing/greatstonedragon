@@ -22,9 +22,18 @@ export const SHOP_COLLECTIONS: { label: string; key: "" | ShopCollectionKey }[] 
     { label: "Trading Accessories", key: "accessories" },
   ];
 
+const HIDDEN_SHOP_COLLECTION_KEYS = new Set<ShopCollectionKey>([
+  "all-products",
+  "stickers",
+  "accessories",
+]);
+
 export function getVisibleShopCollections() {
-  if (BOARDS_UI_ENABLED) return SHOP_COLLECTIONS;
-  return SHOP_COLLECTIONS.filter((item) => item.key !== "boards");
+  return SHOP_COLLECTIONS.filter((item) => {
+    if (item.key && HIDDEN_SHOP_COLLECTION_KEYS.has(item.key)) return false;
+    if (item.key === "boards" && !BOARDS_UI_ENABLED) return false;
+    return true;
+  });
 }
 
 export const BOARD_SUBCATEGORIES: { label: string; key: string }[] = [

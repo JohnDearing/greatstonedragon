@@ -201,7 +201,9 @@ export function ProductsShopSection({
             items: seriesFiltered,
           },
         ]
-      : groupedSections;
+      : groupedSections.filter(
+          (section) => section.key !== "stickers" && section.key !== "accessories",
+        );
 
   const showBoards =
     BOARDS_UI_ENABLED &&

@@ -52,7 +52,7 @@ export function ProductImage({
       {...props}
       src={sized}
       alt={alt}
-      width={width}
+      width={props.fill ? undefined : width}
       sizes={sizes}
       style={{ objectFit: "contain", ...style }}
       unoptimized={shopify || props.unoptimized}
