@@ -2,8 +2,11 @@
 
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { ProductImage } from "@/components/product-image";
+import { ProductVariantModal } from "@/components/product-variant-modal";
+import { hasPinVariantPicker } from "@/lib/product-variants";
 import { Product } from "@/lib/store-data";
 import Link from "next/link";
+import { useCallback, useState, type MouseEvent } from "react";
 
 const FALLBACK_IMAGES = [
   "/images/home/ReleaseCard1.png",
@@ -32,6 +35,18 @@ export function ShopProductCard({
   const imageSrc =
     product.image || FALLBACK_IMAGES[index % FALLBACK_IMAGES.length];
   const detailHref = `/products/${product.slug}`;
+  const needsVariantPicker = hasPinVariantPicker(product.variants);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const openVariantPicker = (event: MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setPickerOpen(true);
+  };
+
+  const closeVariantPicker = useCallback(() => {
+    setPickerOpen(false);
+  }, []);
 
   return (
     <article className="shop-product-card">
@@ -50,20 +65,37 @@ export function ShopProductCard({
       {badgeLabel ? <em className="shop-product-badge">{badgeLabel}</em> : null}
 
       <div className="shop-product-actions">
-        <AddToCartButton
-          className="shop-product-action is-cart"
-          product={{
-            id: product.id,
-            slug: product.slug,
-            name: product.name,
-            price: product.price,
-            variantId: product.variantId,
-          }}
-        />
+        {needsVariantPicker ? (
+          <button
+            type="button"
+            className="shop-product-action is-cart"
+            onClick={openVariantPicker}
+          >
+            Add to Cart
+          </button>
+        ) : (
+          <AddToCartButton
+            className="shop-product-action is-cart"
+            product={{
+              id: product.id,
+              slug: product.slug,
+              name: product.name,
+              price: product.price,
+              variantId: product.variantId,
+            }}
+          />
+        )}
         <Link href={detailHref} className="shop-product-action is-detail">
           View Detail
         </Link>
       </div>
+
+      {needsVariantPicker && pickerOpen ? (
+        <ProductVariantModal
+          product={product}
+          onClose={closeVariantPicker}
+        />
+      ) : null}
 
       <Link href={detailHref} className="shop-product-title">
         {product.name}
