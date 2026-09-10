@@ -15,6 +15,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { useCart } from "./cart-provider";
 import { PinVariantDropdown } from "./pin-variant-dropdown";
+import { StockAlert } from "./stock-alert";
 
 type ProductActionsProps = {
   product: {
@@ -150,6 +151,8 @@ export function ProductActions({ product }: ProductActionsProps) {
           {loading ? "Adding..." : "Add to Cart"}
         </button>
       </div>
+
+      <StockAlert quantityAvailable={selectedVariant?.quantityAvailable} />
     </div>
   );
 }

@@ -44,3 +44,10 @@ export function getMaxAddQuantity(
   if (!caps.length) return 99;
   return Math.max(1, Math.min(...caps));
 }
+
+/** Remaining units to show in the low-stock alert, or null when it should stay hidden. */
+export function getLowStockCount(quantityAvailable?: number | null) {
+  if (quantityAvailable == null) return null;
+  if (quantityAvailable < 1 || quantityAvailable >= 5) return null;
+  return quantityAvailable;
+}

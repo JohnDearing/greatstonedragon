@@ -2319,6 +2319,38 @@ h4 {
   margin-top: 0.35rem;
 }
 
+.product-stock-alert {
+  margin-top: 0.95rem;
+}
+
+.product-stock-alert p {
+  margin: 0;
+  color: #1f8a3c;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-style: italic;
+}
+
+.product-stock-bar {
+  display: block;
+  margin-top: 0.4rem;
+  height: 3px;
+  border-radius: 99px;
+  background: #e6efe8;
+  overflow: hidden;
+}
+
+.product-stock-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #1f8a3c;
+}
+
+.variant-modal-info .product-stock-alert {
+  margin-top: 0.85rem;
+}
+
 .product-actions {
   margin-top: 1rem;
   display: flex;

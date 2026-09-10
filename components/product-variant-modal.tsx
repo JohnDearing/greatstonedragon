@@ -15,6 +15,7 @@ import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useCart } from "./cart-provider";
+import { StockAlert } from "./stock-alert";
 
 const FALLBACK_IMAGE = "/images/product/product1.png";
 
@@ -275,6 +276,8 @@ export function ProductVariantModal({
           >
             {loading ? "Adding..." : soldOut ? "Sold out" : "Add to cart"}
           </button>
+
+          <StockAlert quantityAvailable={selectedVariant?.quantityAvailable} />
         </div>
       </motion.div>
     </div>,

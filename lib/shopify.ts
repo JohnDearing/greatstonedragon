@@ -49,6 +49,7 @@ type AjaxProduct = {
     price?: string;
     compare_at_price?: string | null;
     available?: boolean;
+    inventory_quantity?: number;
   }[];
   images?: { src?: string }[];
 };
@@ -473,6 +474,16 @@ function mapAjaxProduct(node: AjaxProduct): Product {
     variantId: primaryVariant?.id
       ? toVariantGid(primaryVariant.id)
       : undefined,
+    variants: variants.map((variant) => ({
+      id: toVariantGid(variant.id),
+      title: variant.title || "Default Title",
+      price: Number(variant.price ?? 0),
+      availableForSale: variant.available !== false,
+      quantityAvailable:
+        typeof variant.inventory_quantity === "number"
+          ? variant.inventory_quantity
+          : null,
+    })),
   };
 }
 
