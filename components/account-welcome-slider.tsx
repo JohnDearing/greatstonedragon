@@ -1,17 +1,10 @@
 "use client";
 
 import { ProductImage } from "@/components/product-image";
-import { prefersReducedMotion } from "@/lib/gsap-client";
+import { prefersReducedMotion, registerGsap } from "@/lib/gsap-client";
+import gsap from "gsap";
 import Link from "next/link";
-import {
-  KeyboardEvent as ReactKeyboardEvent,
-  PointerEvent as ReactPointerEvent,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 
 export type WelcomePin = {
   id: string;
@@ -19,244 +12,139 @@ export type WelcomePin = {
   href: string;
 };
 
-function shortestOffset(index: number, position: number, count: number) {
-  if (count <= 0) return 0;
-  let delta = index - position;
-  delta -= Math.round(delta / count) * count;
-  return delta;
+type WheelSlide = WelcomePin & { key: string };
+
+const SECONDS_PER_SLIDE = 1.25;
+const ORIGIN = "50% 180%";
+
+function padSlides(pins: WelcomePin[]): WheelSlide[] {
+  if (!pins.length) return [];
+  const copies = pins.length >= 10 ? 1 : Math.ceil(10 / pins.length);
+  return Array.from({ length: copies }, (_, copy) =>
+    pins.map((pin) => ({ ...pin, key: `${pin.id}-${copy}` })),
+  ).flat();
+}
+
+function wrapAngle(value: number) {
+  let angle = value % 360;
+  if (angle > 180) angle -= 360;
+  if (angle < -180) angle += 360;
+  return angle;
 }
 
 export function AccountWelcomeSlider({ pins }: { pins: WelcomePin[] }) {
-  const stageRef = useRef<HTMLDivElement>(null);
-  const slotsRef = useRef<(HTMLDivElement | null)[]>([]);
-  const positionRef = useRef(0);
-  const targetRef = useRef(0);
-  const velocityRef = useRef(0);
-  const draggingRef = useRef(false);
-  const movedRef = useRef(false);
-  const lastXRef = useRef(0);
-  const lastTRef = useRef(0);
-  const slotWidthRef = useRef(180);
-  const radiusRef = useRef({ x: 340, z: 260 });
-  const hoveringRef = useRef(false);
-  const autoAtRef = useRef(performance.now());
+  const slotRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const tweenRef = useRef<gsap.core.Tween | null>(null);
   const [active, setActive] = useState(0);
 
-  const count = pins.length;
-
-  const layout = useCallback(() => {
-    const countNow = pins.length;
-    if (!countNow) return;
-
-    let nearest = 0;
-    let nearestAbs = Number.POSITIVE_INFINITY;
-
-    for (let index = 0; index < countNow; index += 1) {
-      const slot = slotsRef.current[index];
-      if (!slot) continue;
-
-      const offset = shortestOffset(index, positionRef.current, countNow);
-      const angle = offset * 0.58;
-      const x = Math.sin(angle) * radiusRef.current.x;
-      const z = (Math.cos(angle) - 1) * radiusRef.current.z;
-      const y = (1 - Math.cos(angle)) * 70 + Math.abs(offset) * 8;
-      const rotateY = Math.max(-36, Math.min(36, offset * 22));
-      const rotateZ = Math.max(-10, Math.min(10, offset * -4.5));
-      const scale = Math.max(0.72, 1 - Math.abs(offset) * 0.09);
-      const opacity = Math.abs(offset) > 3.35 ? 0 : Math.max(0.42, 1 - Math.abs(offset) * 0.14);
-      const visible = Math.abs(offset) <= 3.4;
-
-      slot.style.opacity = String(opacity);
-      slot.style.visibility = visible ? "visible" : "hidden";
-      slot.style.pointerEvents = Math.abs(offset) < 0.55 ? "auto" : "none";
-      slot.style.zIndex = String(40 - Math.round(Math.abs(offset) * 8));
-      slot.style.transform = `translate3d(${x}px, ${y}px, ${z}px) rotateY(${rotateY}deg) rotateZ(${rotateZ}deg) scale(${scale})`;
-      slot.classList.toggle("is-active", Math.abs(offset) < 0.5);
-
-      if (Math.abs(offset) < nearestAbs) {
-        nearestAbs = Math.abs(offset);
-        nearest = index;
-      }
-    }
-
-    setActive((current) => (current === nearest ? current : nearest));
-  }, [pins.length]);
+  const slides = useMemo(() => padSlides(pins), [pins]);
+  const count = slides.length;
+  const step = count ? 360 / count : 0;
 
   useLayoutEffect(() => {
-    layout();
-  }, [layout]);
+    if (count < 2) return;
 
-  useEffect(() => {
-    const stage = stageRef.current;
-    if (!stage || !count) return;
-
-    const measure = () => {
-      const width = stage.clientWidth;
-      const compact = width < 640;
-      slotWidthRef.current = compact ? 120 : width < 900 ? 150 : 176;
-      radiusRef.current = {
-        x: Math.min(420, Math.max(220, width * 0.42)),
-        z: Math.min(340, Math.max(180, width * 0.34)),
-      };
-      layout();
-    };
-
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(stage);
-
+    const { gsap: g } = registerGsap();
     const reduced = prefersReducedMotion();
-    let frame = 0;
+    const slots = slotRefs.current.filter(Boolean) as HTMLDivElement[];
+    if (slots.length !== count) return;
 
-    const tick = (now: number) => {
-      if (!draggingRef.current) {
-        if (reduced) {
-          const next = targetRef.current;
-          positionRef.current += (next - positionRef.current) * 0.28;
-          if (Math.abs(next - positionRef.current) < 0.001) {
-            positionRef.current = next;
-          }
-        } else {
-          velocityRef.current *= 0.9;
-          if (Math.abs(velocityRef.current) < 0.0018) {
-            velocityRef.current = 0;
-            if (
-              !hoveringRef.current &&
-              now - autoAtRef.current > 2600 &&
-              Math.abs(targetRef.current - positionRef.current) < 0.01
-            ) {
-              targetRef.current += 1;
-              autoAtRef.current = now;
-            }
-            const next = targetRef.current;
-            positionRef.current += (next - positionRef.current) * 0.16;
-            if (Math.abs(next - positionRef.current) < 0.0015) {
-              positionRef.current = next;
-            }
-          } else {
-            positionRef.current += velocityRef.current;
-            targetRef.current = Math.round(positionRef.current);
-            autoAtRef.current = now;
-          }
+    g.set(slots, { transformOrigin: ORIGIN, force3D: true });
+    slots.forEach((slot, index) => {
+      g.set(slot, { rotation: index * step });
+    });
+
+    const syncActive = () => {
+      let nearest = 0;
+      let nearestAbs = 180;
+
+      slots.forEach((slot, index) => {
+        const angle = wrapAngle(Number(g.getProperty(slot, "rotation")) || 0);
+        const abs = Math.abs(angle);
+        slot.style.opacity = String(abs > 115 ? 0 : Math.max(0.38, 1 - abs / 140));
+        slot.classList.toggle("is-active", abs < step / 2);
+        if (abs < nearestAbs) {
+          nearestAbs = abs;
+          nearest = index;
         }
-        layout();
-      }
-      frame = requestAnimationFrame(tick);
+      });
+
+      setActive((current) => (current === nearest ? current : nearest));
     };
 
-    frame = requestAnimationFrame(tick);
+    syncActive();
+
+    if (!reduced) {
+      tweenRef.current = g.to(slots, {
+        rotation: "-=360",
+        duration: count * SECONDS_PER_SLIDE,
+        ease: "none",
+        repeat: -1,
+        transformOrigin: ORIGIN,
+        onUpdate: syncActive,
+      });
+    }
+
+    const onEnter = () => {
+      tweenRef.current?.pause();
+    };
+    const onLeave = (event: PointerEvent) => {
+      const next = event.relatedTarget as Node | null;
+      if (next && slots.some((slot) => slot.contains(next))) return;
+      tweenRef.current?.resume();
+    };
+
+    slots.forEach((slot) => {
+      slot.addEventListener("pointerenter", onEnter);
+      slot.addEventListener("pointerleave", onLeave);
+    });
+
     return () => {
-      observer.disconnect();
-      cancelAnimationFrame(frame);
+      slots.forEach((slot) => {
+        slot.removeEventListener("pointerenter", onEnter);
+        slot.removeEventListener("pointerleave", onLeave);
+      });
+      tweenRef.current?.kill();
+      tweenRef.current = null;
+      g.killTweensOf(slots);
     };
-  }, [count, layout]);
-
-  function snapTo(next: number) {
-    targetRef.current = next;
-    velocityRef.current = 0;
-    autoAtRef.current = performance.now();
-  }
-
-  function onKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
-    if (count < 2) return;
-    if (event.key === "ArrowRight") {
-      event.preventDefault();
-      snapTo(Math.round(targetRef.current) + 1);
-    }
-    if (event.key === "ArrowLeft") {
-      event.preventDefault();
-      snapTo(Math.round(targetRef.current) - 1);
-    }
-  }
-
-  function onPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
-    if (count < 2) return;
-    draggingRef.current = true;
-    movedRef.current = false;
-    velocityRef.current = 0;
-    autoAtRef.current = performance.now();
-    lastXRef.current = event.clientX;
-    lastTRef.current = performance.now();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    event.currentTarget.classList.add("is-dragging");
-  }
-
-  function onPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
-    if (!draggingRef.current || count < 2) return;
-    const now = performance.now();
-    const dx = event.clientX - lastXRef.current;
-    const dt = Math.max(8, now - lastTRef.current);
-    if (Math.abs(dx) > 4) movedRef.current = true;
-    const delta = dx / slotWidthRef.current;
-    positionRef.current -= delta;
-    velocityRef.current = -delta * (16 / dt);
-    lastXRef.current = event.clientX;
-    lastTRef.current = now;
-    layout();
-  }
-
-  function onPointerUp(event: ReactPointerEvent<HTMLDivElement>) {
-    if (!draggingRef.current) return;
-    draggingRef.current = false;
-    event.currentTarget.classList.remove("is-dragging");
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-    const flick = velocityRef.current * 10;
-    snapTo(Math.round(positionRef.current + flick));
-  }
+  }, [count, step]);
 
   if (!count) return null;
 
   return (
     <div
-      ref={stageRef}
       className="account-curve"
       role="region"
       aria-roledescription="carousel"
       aria-label="Featured pins"
-      tabIndex={0}
-      onKeyDown={onKeyDown}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
-      onPointerEnter={() => {
-        hoveringRef.current = true;
-      }}
-      onPointerLeave={() => {
-        hoveringRef.current = false;
-        autoAtRef.current = performance.now();
-      }}
     >
-      <div className="account-curve-scene">
-        {pins.map((pin, index) => (
+      <div className="account-curve-wheel">
+        {slides.map((slide, index) => (
           <div
-            key={pin.id}
+            key={slide.key}
             className="account-curve-slot"
             ref={(node) => {
-              slotsRef.current[index] = node;
+              slotRefs.current[index] = node;
             }}
           >
             <Link
-              href={pin.href}
-              className="account-curve-card"
+              href={slide.href}
+              className="account-curve-card rounded-[100px]"
               draggable={false}
               aria-current={active === index ? "true" : undefined}
-              onClick={(event) => {
-                if (movedRef.current) event.preventDefault();
-              }}
+              tabIndex={active === index ? 0 : -1}
             >
-            <span className="account-curve-card-frame">
-              <ProductImage
-                src={pin.image}
-                alt=""
-                fill
-                sizes="(max-width: 640px) 110px, 160px"
-                style={{ objectFit: "contain" }}
-                draggable={false}
-              />
-            </span>
+              <span className="account-curve-card-frame rounded-[100px]">
+                <ProductImage
+                  src={slide.image}
+                  alt=""
+                  fill
+                  sizes="(max-width: 640px) 110px, 140px"
+                  style={{ objectFit: "cover" }}
+                  draggable={false}
+                />
+              </span>
             </Link>
           </div>
         ))}
