@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 :root {
   --bg: #f6dfe5;
@@ -2288,6 +2289,57 @@ h4 {
   font-size: clamp(1.8rem, 5vw, 3rem);
   font-weight: 800;
   line-height: 1.15;
+}
+
+.product-copy {
+  margin: 0 0 1rem;
+  --tw-prose-body: var(--text-muted);
+  --tw-prose-headings: var(--text);
+  --tw-prose-lead: var(--text-muted);
+  --tw-prose-links: var(--brand);
+  --tw-prose-bold: var(--text);
+  --tw-prose-counters: var(--brand);
+  --tw-prose-bullets: var(--brand);
+  --tw-prose-hr: var(--border);
+  --tw-prose-quotes: var(--text);
+  --tw-prose-quote-borders: var(--gold);
+  --tw-prose-captions: var(--text-muted);
+  --tw-prose-kbd: var(--text);
+  --tw-prose-code: var(--text);
+  --tw-prose-pre-code: var(--surface);
+  --tw-prose-th-borders: var(--border);
+  --tw-prose-td-borders: var(--border);
+}
+
+.product-copy :where(p, ul, ol, h2, h3, h4, blockquote) {
+  margin-top: 0.7em;
+  margin-bottom: 0.7em;
+}
+
+.product-copy :where(h2, h3, h4) {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.product-copy :where(ul) {
+  list-style: disc;
+  padding-left: 1.2rem;
+}
+
+.product-copy :where(ol) {
+  list-style: decimal;
+  padding-left: 1.2rem;
+}
+
+.product-copy :where(li) {
+  margin: 0.25em 0;
+}
+
+.product-copy :where(a) {
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
 }
 
 .product-meta {

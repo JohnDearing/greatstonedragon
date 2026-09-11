@@ -24,6 +24,7 @@ type ShopifyProductNode = {
   handle: string;
   title: string;
   description: string;
+  descriptionHtml?: string;
   tags: string[];
   productType: string;
   featuredImage?: { url: string; altText?: string | null } | null;
@@ -70,6 +71,7 @@ const PRODUCTS_QUERY = `
         handle
         title
         description
+        descriptionHtml
         tags
         productType
         featuredImage {
@@ -273,6 +275,29 @@ function stripHtml(value: string) {
   return value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
+function sanitizeDescriptionHtml(value: string) {
+  return value
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "")
+    .replace(/<iframe[\s\S]*?>[\s\S]*?<\/iframe>/gi, "")
+    .replace(/\son\w+="[^"]*"/gi, "")
+    .replace(/\son\w+='[^']*'/gi, "")
+    .replace(/javascript:/gi, "")
+    .trim();
+}
+
+export function descriptionToHtml(html: string | undefined, plain: string) {
+  const cleaned = sanitizeDescriptionHtml(html || "");
+  if (cleaned) return cleaned;
+  const escaped = plain
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  return escaped
+    .split(/\n{2,}/)
+    .map((block) => `<p>${block.replace(/\n/g, "<br />")}</p>`)
+    .join("");
+}
+
 function normalizeTags(tags: string[] | string | undefined) {
   if (Array.isArray(tags)) return tags;
   if (typeof tags === "string") {
@@ -374,7 +399,7 @@ function pickVariantId(
 }
 
 function mapGraphqlProduct(node: ShopifyProductNode): Product {
-  const description = stripHtml(node.description || "");
+  const description = stripHtml(node.descriptionHtml || node.description || "");
   const variants = node.variants?.nodes ?? [];
   const primaryVariant =
     variants.find((v) => v.availableForSale !== false) ?? variants[0];
@@ -399,6 +424,7 @@ function mapGraphqlProduct(node: ShopifyProductNode): Product {
       "Collectible fantasy pin from Great Stone Dragon.",
     description:
       description || "Collectible fantasy pin from Great Stone Dragon.",
+    descriptionHtml: sanitizeDescriptionHtml(node.descriptionHtml || ""),
     price,
     compareAtPrice: compareAt > price ? compareAt : undefined,
     badge: mapBadge({ title: node.title, tags }),
@@ -456,6 +482,7 @@ function mapAjaxProduct(node: AjaxProduct): Product {
       "Collectible fantasy pin from Great Stone Dragon.",
     description:
       description || "Collectible fantasy pin from Great Stone Dragon.",
+    descriptionHtml: sanitizeDescriptionHtml(node.body_html || ""),
     price,
     compareAtPrice: compareAt > price ? compareAt : undefined,
     badge: mapBadge({ title: node.title, tags }),

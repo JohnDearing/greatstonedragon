@@ -4,6 +4,7 @@ export type Product = {
   name: string;
   shortDescription: string;
   description: string;
+  descriptionHtml?: string;
   price: number;
   compareAtPrice?: number;
   badge?: "New" | "Preorder" | "Best Seller" | "Limited";

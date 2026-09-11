@@ -1,5 +1,6 @@
 import { ProductActions } from "@/components/product-actions";
 import { ProductCard } from "@/components/product-card";
+import { ProductDescription } from "@/components/product-description";
 import { ProductImage } from "@/components/product-image";
 import { PromoPopupHost } from "@/components/promo-popup-host";
 import { getCatalogProductBySlug, getCatalogProducts } from "@/lib/catalog";
@@ -43,7 +44,10 @@ export default async function ProductDetailsPage({
         <div className="product-info">
           {product.badge ? <p className="pill">{product.badge}</p> : null}
           <h1>{product.name}</h1>
-          <p className="muted">{product.description}</p>
+          <ProductDescription
+            html={product.descriptionHtml}
+            text={product.description}
+          />
           {product.reviews > 0 ? (
             <p className="rating-line">
               {product.rating.toFixed(1)} stars from {product.reviews} verified
