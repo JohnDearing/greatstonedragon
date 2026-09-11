@@ -67,24 +67,40 @@ export type CustomerProfile = {
   addresses: CustomerAddress[];
 };
 
+export type CustomerOrderLine = {
+  name: string;
+  quantity: number;
+  total: string;
+  amount: number;
+  image?: string | null;
+  variantId?: string | null;
+  productId?: string | null;
+};
+
 export type CustomerOrderSummary = {
   id: string;
   name: string;
+  number: string;
   processedAt: string;
   financialStatus?: string | null;
   fulfillmentStatus?: string | null;
+  headline: "Complete" | "Confirmed";
+  isComplete: boolean;
   total: string;
+  image?: string | null;
+  lineItems: CustomerOrderLine[];
 };
 
 export type CustomerOrderDetail = CustomerOrderSummary & {
   statusPageUrl?: string | null;
+  email?: string | null;
+  billingLines: string[];
   shippingLines: string[];
-  lineItems: {
-    name: string;
-    quantity: number;
-    total: string;
-    image?: string | null;
-  }[];
+  subtotal: string;
+  shipping: string;
+  totalAmount: string;
+  currencyCode: string;
+  fulfilledAt?: string | null;
 };
 
 type TokenResponse = {
@@ -450,6 +466,52 @@ function moneyLabel(amount?: string | null, currency?: string | null) {
   return `${value.toFixed(2)} ${code}`;
 }
 
+function moneyPlain(amount?: string | null, currency?: string | null) {
+  const value = Number(amount || 0);
+  const code = currency || "USD";
+  if (code === "USD") return `$${value.toFixed(2)}`;
+  return `${value.toFixed(2)} ${code}`;
+}
+
+export function isOrderComplete(status?: string | null) {
+  const value = (status || "").toUpperCase();
+  return value === "FULFILLED" || value === "SUCCESS" || value === "COMPLETE";
+}
+
+export function orderHeadline(status?: string | null): "Complete" | "Confirmed" {
+  return isOrderComplete(status) ? "Complete" : "Confirmed";
+}
+
+export function orderNumber(name: string) {
+  const trimmed = name.trim();
+  return trimmed.startsWith("#") ? trimmed : `#${trimmed}`;
+}
+
+type OrderLineNode = {
+  name: string;
+  quantity: number;
+  image?: { url?: string | null } | null;
+  variantId?: string | null;
+  productId?: string | null;
+  currentTotalPrice?: { amount: string; currencyCode?: string } | null;
+  price?: { amount: string; currencyCode?: string } | null;
+};
+
+function mapLineItems(nodes?: OrderLineNode[] | null): CustomerOrderLine[] {
+  return (nodes ?? []).map((item) => ({
+    name: item.name,
+    quantity: item.quantity,
+    total: moneyPlain(
+      item.currentTotalPrice?.amount,
+      item.currentTotalPrice?.currencyCode,
+    ),
+    amount: Number(item.currentTotalPrice?.amount || item.price?.amount || 0),
+    image: item.image?.url || null,
+    variantId: item.variantId || null,
+    productId: item.productId || null,
+  }));
+}
+
 export async function fetchCustomerAccount() {
   const data = await customerGraphql<{
     customer: {
@@ -482,6 +544,7 @@ export async function fetchCustomerAccount() {
           financialStatus?: string | null;
           fulfillmentStatus?: string | null;
           totalPrice?: { amount: string; currencyCode?: string } | null;
+          lineItems?: { nodes?: OrderLineNode[] } | null;
         }[];
       } | null;
     } | null;
@@ -517,6 +580,17 @@ export async function fetchCustomerAccount() {
             financialStatus
             fulfillmentStatus
             totalPrice { amount currencyCode }
+            lineItems(first: 8) {
+              nodes {
+                name
+                quantity
+                image { url }
+                variantId
+                productId
+                currentTotalPrice { amount currencyCode }
+                price { amount currencyCode }
+              }
+            }
           }
         }
       }
@@ -555,14 +629,27 @@ export async function fetchCustomerAccount() {
     addresses,
   };
 
-  const orders: CustomerOrderSummary[] = (customer.orders?.nodes ?? []).map((order) => ({
-    id: order.id,
-    name: order.name,
-    processedAt: order.processedAt,
-    financialStatus: order.financialStatus,
-    fulfillmentStatus: order.fulfillmentStatus,
-    total: moneyLabel(order.totalPrice?.amount, order.totalPrice?.currencyCode),
-  }));
+  const orders: CustomerOrderSummary[] = (customer.orders?.nodes ?? [])
+    .map((order) => {
+      const lineItems = mapLineItems(order.lineItems?.nodes);
+      return {
+        id: order.id,
+        name: order.name,
+        number: orderNumber(order.name),
+        processedAt: order.processedAt,
+        financialStatus: order.financialStatus,
+        fulfillmentStatus: order.fulfillmentStatus,
+        headline: orderHeadline(order.fulfillmentStatus),
+        isComplete: isOrderComplete(order.fulfillmentStatus),
+        total: moneyLabel(order.totalPrice?.amount, order.totalPrice?.currencyCode),
+        image: lineItems.find((item) => item.image)?.image || null,
+        lineItems,
+      };
+    })
+    .sort(
+      (a, b) =>
+        new Date(b.processedAt).getTime() - new Date(a.processedAt).getTime(),
+    );
 
   return { profile, orders };
 }
@@ -576,16 +663,15 @@ export async function fetchCustomerOrder(id: string) {
       financialStatus?: string | null;
       fulfillmentStatus?: string | null;
       statusPageUrl?: string | null;
+      email?: string | null;
+      currencyCode?: string | null;
       totalPrice?: { amount: string; currencyCode?: string } | null;
+      subtotal?: { amount: string; currencyCode?: string } | null;
+      totalShipping?: { amount: string; currencyCode?: string } | null;
+      billingAddress?: { formatted?: string[] | null } | null;
       shippingAddress?: { formatted?: string[] | null } | null;
-      lineItems?: {
-        nodes?: {
-          name: string;
-          quantity: number;
-          image?: { url?: string | null } | null;
-          currentTotalPrice?: { amount: string; currencyCode?: string } | null;
-        }[];
-      } | null;
+      fulfillments?: { nodes?: { createdAt?: string | null; status?: string | null }[] } | null;
+      lineItems?: { nodes?: OrderLineNode[] } | null;
     } | null;
   }>(
     `
@@ -597,14 +683,25 @@ export async function fetchCustomerOrder(id: string) {
         financialStatus
         fulfillmentStatus
         statusPageUrl
+        email
+        currencyCode
         totalPrice { amount currencyCode }
-        shippingAddress { formatted }
+        subtotal { amount currencyCode }
+        totalShipping { amount currencyCode }
+        billingAddress { formatted(withName: true) }
+        shippingAddress { formatted(withName: true) }
+        fulfillments(first: 5) {
+          nodes { createdAt status }
+        }
         lineItems(first: 50) {
           nodes {
             name
             quantity
             image { url }
+            variantId
+            productId
             currentTotalPrice { amount currencyCode }
+            price { amount currencyCode }
           }
         }
       }
@@ -616,24 +713,32 @@ export async function fetchCustomerOrder(id: string) {
   const order = data?.order;
   if (!order) return null;
 
+  const lineItems = mapLineItems(order.lineItems?.nodes);
+  const shippingAmount = Number(order.totalShipping?.amount || 0);
+  const fulfilledAt =
+    order.fulfillments?.nodes?.find((item) => item.createdAt)?.createdAt || null;
+
   return {
     id: order.id,
     name: order.name,
+    number: orderNumber(order.name),
     processedAt: order.processedAt,
     financialStatus: order.financialStatus,
     fulfillmentStatus: order.fulfillmentStatus,
+    headline: orderHeadline(order.fulfillmentStatus),
+    isComplete: isOrderComplete(order.fulfillmentStatus),
     total: moneyLabel(order.totalPrice?.amount, order.totalPrice?.currencyCode),
+    image: lineItems.find((item) => item.image)?.image || null,
+    lineItems,
     statusPageUrl: order.statusPageUrl,
+    email: order.email || null,
+    billingLines: order.billingAddress?.formatted?.filter(Boolean) ?? [],
     shippingLines: order.shippingAddress?.formatted?.filter(Boolean) ?? [],
-    lineItems: (order.lineItems?.nodes ?? []).map((item) => ({
-      name: item.name,
-      quantity: item.quantity,
-      total: moneyLabel(
-        item.currentTotalPrice?.amount,
-        item.currentTotalPrice?.currencyCode,
-      ),
-      image: item.image?.url || null,
-    })),
+    subtotal: moneyPlain(order.subtotal?.amount, order.subtotal?.currencyCode),
+    shipping: shippingAmount === 0 ? "Free" : moneyPlain(order.totalShipping?.amount, order.totalShipping?.currencyCode),
+    totalAmount: moneyPlain(order.totalPrice?.amount, order.totalPrice?.currencyCode),
+    currencyCode: order.currencyCode || order.totalPrice?.currencyCode || "USD",
+    fulfilledAt,
   } satisfies CustomerOrderDetail;
 }
 
@@ -653,6 +758,15 @@ export function formatOrderDate(value: string) {
     month: "short",
     day: "numeric",
     year: "numeric",
+  });
+}
+
+export function formatOrderShort(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
   });
 }
 

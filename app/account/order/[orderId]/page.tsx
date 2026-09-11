@@ -1,9 +1,11 @@
+import { buyAgainFromLines } from "@/components/account-order-card";
+import { BuyAgainButton } from "@/components/buy-again-button";
 import { ProductImage } from "@/components/product-image";
+import { getCatalogProducts } from "@/lib/catalog";
 import {
   decodeOrderParam,
   fetchCustomerOrder,
-  formatOrderDate,
-  prettyStatus,
+  formatOrderShort,
   requireAccountSession,
 } from "@/lib/customer-account";
 import Link from "next/link";
@@ -31,75 +33,113 @@ export default async function AccountOrderDetailPage({
 
   if (!order) notFound();
 
+  const catalog = await getCatalogProducts();
+  const buyAgain = buyAgainFromLines(order.lineItems, catalog);
+  const confirmedOn = formatOrderShort(order.processedAt);
+  const completedOn = formatOrderShort(order.fulfilledAt || order.processedAt);
+
   return (
-    <>
-      <p className="cart-page-kicker">Order</p>
-      <div className="account-head">
+    <div className="account-order-detail">
+      <header className="account-order-detail-head">
         <div>
-          <h1>{order.name}</h1>
-          <p className="muted">{formatOrderDate(order.processedAt)}</p>
+          <Link href="/account/order" className="account-order-back">
+            <span aria-hidden="true">←</span>
+            Order {order.number}
+          </Link>
+          <p>
+            {order.headline} {confirmedOn}
+          </p>
         </div>
-        <Link href="/account/order" className="soft-button">
-          Back to orders
-        </Link>
-      </div>
+        <BuyAgainButton items={buyAgain} className="account-buy-again" />
+      </header>
 
-      <div className="account-grid">
-        <article className="account-panel">
-          <h2>Status</h2>
-          <p>Payment: {prettyStatus(order.financialStatus) || "Unknown"}</p>
-          <p>
-            Fulfillment: {prettyStatus(order.fulfillmentStatus) || "Unknown"}
-          </p>
-          <p>
-            <strong>Total: {order.total}</strong>
-          </p>
-          {order.statusPageUrl ? (
-            <a href={order.statusPageUrl} className="account-status-link">
-              View Shopify order status
-            </a>
-          ) : null}
-        </article>
+      <section className="account-order-panel account-order-timeline">
+        {order.isComplete ? (
+          <div className="account-timeline-step is-done">
+            <span className="account-timeline-rail" aria-hidden="true">
+              <span className="account-timeline-mark">✓</span>
+              <span className="account-timeline-line" />
+            </span>
+            <div>
+              <strong>Complete</strong>
+              <p>{completedOn}</p>
+            </div>
+          </div>
+        ) : null}
+        <div className="account-timeline-step">
+          <span className="account-timeline-rail" aria-hidden="true">
+            <span className="account-timeline-dot" />
+          </span>
+          <div>
+            <strong>Confirmed</strong>
+            <p>{confirmedOn}</p>
+          </div>
+        </div>
+      </section>
 
-        <article className="account-panel">
-          <h2>Shipping</h2>
-          {order.shippingLines.length ? (
-            <address className="account-address">
-              {order.shippingLines.map((line) => (
-                <span key={line}>{line}</span>
-              ))}
-            </address>
-          ) : (
-            <p className="muted">No shipping address on this order.</p>
-          )}
-        </article>
-      </div>
-
-      <article className="account-panel account-lines">
-        <h2>Items</h2>
-        <ul className="account-line-list">
+      <section className="account-order-panel">
+        <ul className="account-order-items">
           {order.lineItems.map((item, index) => (
-            <li key={`${item.name}-${index}`} className="account-line">
-              {item.image ? (
-                <ProductImage
-                  src={item.image}
-                  alt={item.name}
-                  width={72}
-                  height={72}
-                  className="account-line-img"
-                />
-              ) : (
-                <span className="account-line-fallback" />
-              )}
-              <div>
-                <strong>{item.name}</strong>
-                <p className="muted">Qty {item.quantity}</p>
+            <li key={`${item.name}-${index}`}>
+              <div className="account-order-item-media">
+                {item.image ? (
+                  <ProductImage
+                    src={item.image}
+                    alt={item.name}
+                    width={72}
+                    height={72}
+                  />
+                ) : (
+                  <span className="account-order-item-fallback" />
+                )}
+                {item.quantity > 0 ? (
+                  <span className="account-order-qty">{item.quantity}</span>
+                ) : null}
               </div>
-              <span>{item.total}</span>
+              <p className="account-order-item-name">{item.name}</p>
+              <span className="account-order-item-price">{item.total}</span>
             </li>
           ))}
         </ul>
-      </article>
-    </>
+
+        <dl className="account-order-totals">
+          <div>
+            <dt>Subtotal</dt>
+            <dd>{order.subtotal}</dd>
+          </div>
+          <div>
+            <dt>Shipping</dt>
+            <dd>{order.shipping}</dd>
+          </div>
+          <div className="is-total">
+            <dt>Total</dt>
+            <dd>
+              <span>{order.currencyCode}</span> {order.totalAmount}
+            </dd>
+          </div>
+        </dl>
+      </section>
+
+      {order.email || order.billingLines.length ? (
+        <section className="account-order-panel account-order-meta">
+          {order.email ? (
+            <div>
+              <h3>Contact</h3>
+              <p>{order.email}</p>
+            </div>
+          ) : null}
+          {order.billingLines.length ? (
+            <div>
+              <h3>Billing address</h3>
+              <address>
+                {order.billingLines.map((line) => (
+                  <span key={line}>{line}</span>
+                ))}
+              </address>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+    </div>
   );
 }

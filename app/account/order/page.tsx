@@ -1,10 +1,8 @@
+import { AccountOrderCard, buyAgainFromLines } from "@/components/account-order-card";
 import { AccountWelcomeSlider } from "@/components/account-welcome-slider";
 import { getCatalogProducts } from "@/lib/catalog";
 import {
-  encodeOrderParam,
   fetchCustomerAccount,
-  formatOrderDate,
-  prettyStatus,
   requireAccountSession,
 } from "@/lib/customer-account";
 import Link from "next/link";
@@ -41,28 +39,15 @@ export default async function AccountOrderPage() {
   return (
     <>
       {orders.length ? (
-        <article className="account-panel account-orders">
-          <h1 className="account-panel-title">Orders</h1>
-          <ul className="account-order-list">
-            {orders.map((order) => (
-              <li key={order.id}>
-                <Link
-                  href={`/account/order/${encodeOrderParam(order.id)}`}
-                  className="account-order-row"
-                >
-                  <span className="account-order-name">{order.name}</span>
-                  <span>{formatOrderDate(order.processedAt)}</span>
-                  <span>{order.total}</span>
-                  <span>
-                    {prettyStatus(order.fulfillmentStatus) ||
-                      prettyStatus(order.financialStatus) ||
-                      "View"}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </article>
+        <div className="account-order-stack">
+          {orders.map((order) => (
+            <AccountOrderCard
+              key={order.id}
+              order={order}
+              buyAgain={buyAgainFromLines(order.lineItems, catalog)}
+            />
+          ))}
+        </div>
       ) : (
         <section className="account-welcome">
           <div className="account-welcome-top">
