@@ -1,4 +1,4 @@
-import { ProductImage } from "@/components/product-image";
+import { AccountWelcomeSlider } from "@/components/account-welcome-slider";
 import { getCatalogProducts } from "@/lib/catalog";
 import {
   encodeOrderParam,
@@ -29,8 +29,14 @@ export default async function AccountOrderPage() {
   const { profile, orders } = account;
   const welcomeName = profile.firstName || profile.displayName;
   const catalog = await getCatalogProducts();
-  const previewPins = catalog.filter((item) => item.image).slice(0, 5);
-  const tilts = [-14, -8, 2, 8, 12];
+  const previewPins = catalog
+    .filter((item) => item.image)
+    .slice(0, 16)
+    .map((item) => ({
+      id: item.id,
+      image: item.image as string,
+      href: `/products/${item.slug}`,
+    }));
 
   return (
     <>
@@ -68,25 +74,7 @@ export default async function AccountOrderPage() {
               Shop now
             </Link>
           </div>
-          {previewPins.length ? (
-            <div className="account-welcome-fan" aria-hidden="true">
-              {previewPins.map((item, index) => (
-                <div
-                  key={item.id}
-                  className="account-welcome-pin"
-                  style={{ transform: `rotate(${tilts[index] ?? 0}deg)` }}
-                >
-                  <ProductImage
-                    src={item.image!}
-                    alt=""
-                    width={220}
-                    height={220}
-                    style={{ objectFit: "cover" }}
-                  />
-                </div>
-              ))}
-            </div>
-          ) : null}
+          <AccountWelcomeSlider pins={previewPins} />
         </section>
       )}
     </>

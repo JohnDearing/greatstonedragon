@@ -2565,7 +2565,7 @@ h4 {
   grid-template-columns: 7.5rem minmax(0, 1fr);
   gap: 2.4rem;
   align-items: start;
-  max-width: 920px;
+  max-width: 1080px;
 }
 
 .account-side {
@@ -2919,9 +2919,9 @@ h4 {
 
 .account-welcome {
   background: #fff;
-  border-radius: 1.6rem;
-  box-shadow: 0 10px 28px rgba(17, 17, 17, 0.08);
-  padding: 1.45rem 1.5rem 1.7rem;
+  border-radius: 1.85rem;
+  box-shadow: 0 14px 40px rgba(17, 17, 17, 0.08);
+  padding: 1.85rem 1.9rem 1.35rem;
   overflow: hidden;
 }
 
@@ -2934,15 +2934,18 @@ h4 {
 
 .account-welcome h1 {
   margin: 0;
-  font-size: 1.35rem;
-  color: #171717;
-  font-weight: 700;
+  font-size: 1.7rem;
+  color: #111;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
 }
 
 .account-welcome p {
-  margin: 0.2rem 0 0;
-  color: #8b8b8b;
-  font-size: 0.98rem;
+  margin: 0.28rem 0 0;
+  color: #9a9a9a;
+  font-size: 1.05rem;
+  font-weight: 500;
 }
 
 .account-shop-now {
@@ -2952,11 +2955,12 @@ h4 {
   background: var(--brand);
   color: #fff;
   border-radius: 999px;
-  padding: 0.48rem 1.05rem;
-  font-size: 0.84rem;
+  padding: 0.62rem 1.2rem;
+  font-size: 0.9rem;
   font-weight: 700;
   text-decoration: none;
   white-space: nowrap;
+  box-shadow: 0 6px 14px rgba(158, 15, 31, 0.18);
 }
 
 .account-shop-now:hover {
@@ -2964,23 +2968,42 @@ h4 {
   color: #fff;
 }
 
-.account-welcome-fan {
+.account-welcome-slider {
+  margin: 1.15rem -1.9rem 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  cursor: grab;
+  scrollbar-width: none;
+  touch-action: pan-y;
+}
+
+.account-welcome-slider::-webkit-scrollbar {
+  display: none;
+}
+
+.account-welcome-slider.is-dragging {
+  cursor: grabbing;
+}
+
+.account-welcome-track {
   display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  min-height: 210px;
-  padding: 1.8rem 0.4rem 0.35rem;
+  align-items: center;
+  width: max-content;
+  padding: 1.55rem 2.2rem 1.7rem;
 }
 
 .account-welcome-pin {
-  width: 132px;
-  height: 132px;
-  margin-left: -1.35rem;
-  border-radius: 1.05rem;
+  position: relative;
+  display: block;
+  width: 162px;
+  height: 162px;
+  margin-left: -2.35rem;
+  border-radius: 1.2rem;
   overflow: hidden;
   background: #fff;
-  box-shadow: 0 10px 22px rgba(17, 17, 17, 0.14);
+  box-shadow: 0 10px 24px rgba(17, 17, 17, 0.14);
   flex: 0 0 auto;
+  user-select: none;
 }
 
 .account-welcome-pin:first-child {
@@ -2991,6 +3014,7 @@ h4 {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  pointer-events: none;
 }
 
 .account-head {
@@ -3113,9 +3137,9 @@ h4 {
   }
 
   .account-welcome-pin {
-    width: 92px;
-    height: 92px;
-    margin-left: -1rem;
+    width: 118px;
+    height: 118px;
+    margin-left: -1.65rem;
   }
 
   .account-field-row,
