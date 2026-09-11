@@ -3,7 +3,15 @@
 import { ProductImage } from "@/components/product-image";
 import { prefersReducedMotion } from "@/lib/gsap-client";
 import Link from "next/link";
-import { PointerEvent, useEffect, useRef } from "react";
+import {
+  KeyboardEvent as ReactKeyboardEvent,
+  PointerEvent as ReactPointerEvent,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 export type WelcomePin = {
   id: string;
@@ -11,127 +19,223 @@ export type WelcomePin = {
   href: string;
 };
 
-const TILTS = [-7, 5, -4, 8, 6, -8, 4, 10];
+function shortestOffset(index: number, position: number, count: number) {
+  if (count <= 0) return 0;
+  let delta = index - position;
+  delta -= Math.round(delta / count) * count;
+  return delta;
+}
 
 export function AccountWelcomeSlider({ pins }: { pins: WelcomePin[] }) {
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const pausedRef = useRef(false);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const slotsRef = useRef<(HTMLDivElement | null)[]>([]);
+  const positionRef = useRef(0);
+  const targetRef = useRef(0);
+  const velocityRef = useRef(0);
   const draggingRef = useRef(false);
   const movedRef = useRef(false);
-  const startXRef = useRef(0);
-  const startScrollRef = useRef(0);
+  const lastXRef = useRef(0);
+  const lastTRef = useRef(0);
+  const slotWidthRef = useRef(160);
+  const radiusRef = useRef({ x: 260, z: 180 });
+  const [active, setActive] = useState(0);
 
-  const looped = pins.length ? [...pins, ...pins, ...pins] : [];
+  const count = pins.length;
+
+  const layout = useCallback(() => {
+    const countNow = pins.length;
+    if (!countNow) return;
+
+    let nearest = 0;
+    let nearestAbs = Number.POSITIVE_INFINITY;
+
+    for (let index = 0; index < countNow; index += 1) {
+      const slot = slotsRef.current[index];
+      if (!slot) continue;
+
+      const offset = shortestOffset(index, positionRef.current, countNow);
+      const angle = offset * 0.38;
+      const x = Math.sin(angle) * radiusRef.current.x;
+      const z = (Math.cos(angle) - 1) * radiusRef.current.z;
+      const y = Math.abs(offset) * 18;
+      const rotateY = Math.max(-20, Math.min(20, offset * 12));
+      const scale = Math.max(0.78, 1 - Math.abs(offset) * 0.07);
+      const opacity = Math.abs(offset) > 3.15 ? 0 : Math.max(0.35, 1 - Math.abs(offset) * 0.16);
+      const visible = Math.abs(offset) <= 3.2;
+
+      slot.style.opacity = String(opacity);
+      slot.style.visibility = visible ? "visible" : "hidden";
+      slot.style.pointerEvents = Math.abs(offset) < 0.55 ? "auto" : "none";
+      slot.style.zIndex = String(40 - Math.round(Math.abs(offset) * 8));
+      slot.style.transform = `translate3d(${x}px, ${y}px, ${z}px) rotateY(${rotateY}deg) scale(${scale})`;
+      slot.classList.toggle("is-active", Math.abs(offset) < 0.5);
+
+      if (Math.abs(offset) < nearestAbs) {
+        nearestAbs = Math.abs(offset);
+        nearest = index;
+      }
+    }
+
+    setActive((current) => (current === nearest ? current : nearest));
+  }, [pins.length]);
+
+  useLayoutEffect(() => {
+    layout();
+  }, [layout]);
 
   useEffect(() => {
-    const viewport = viewportRef.current;
-    if (!viewport || pins.length < 2) return;
+    const stage = stageRef.current;
+    if (!stage || !count) return;
 
-    const segment = () => viewport.scrollWidth / 3;
-    viewport.scrollLeft = segment();
+    const measure = () => {
+      const width = stage.clientWidth;
+      const compact = width < 640;
+      slotWidthRef.current = compact ? 108 : width < 900 ? 132 : 156;
+      radiusRef.current = {
+        x: Math.min(320, Math.max(170, width * 0.34)),
+        z: Math.min(240, Math.max(130, width * 0.26)),
+      };
+      layout();
+    };
 
-    if (prefersReducedMotion()) return;
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(stage);
 
+    const reduced = prefersReducedMotion();
     let frame = 0;
-    let last = performance.now();
 
-    const tick = (now: number) => {
-      const width = segment();
-      if (width > 0 && !pausedRef.current && !draggingRef.current) {
-        viewport.scrollLeft += ((now - last) / 16) * 0.55;
-        if (viewport.scrollLeft >= width * 2) {
-          viewport.scrollLeft -= width;
+    const tick = () => {
+      if (!draggingRef.current) {
+        if (reduced) {
+          const next = targetRef.current;
+          positionRef.current += (next - positionRef.current) * 0.28;
+          if (Math.abs(next - positionRef.current) < 0.001) {
+            positionRef.current = next;
+          }
+        } else {
+          velocityRef.current *= 0.9;
+          if (Math.abs(velocityRef.current) < 0.0018) {
+            velocityRef.current = 0;
+            const next = targetRef.current;
+            positionRef.current += (next - positionRef.current) * 0.18;
+            if (Math.abs(next - positionRef.current) < 0.0015) {
+              positionRef.current = next;
+            }
+          } else {
+            positionRef.current += velocityRef.current;
+            targetRef.current = Math.round(positionRef.current);
+          }
         }
+        layout();
       }
-      last = now;
       frame = requestAnimationFrame(tick);
     };
 
     frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [pins.length]);
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+    };
+  }, [count, layout]);
 
-  function wrapScroll() {
-    const viewport = viewportRef.current;
-    if (!viewport || pins.length < 2) return;
-    const width = viewport.scrollWidth / 3;
-    if (width <= 0) return;
-    if (viewport.scrollLeft < width * 0.5) viewport.scrollLeft += width;
-    if (viewport.scrollLeft >= width * 2.5) viewport.scrollLeft -= width;
+  function snapTo(next: number) {
+    targetRef.current = next;
+    velocityRef.current = 0;
   }
 
-  function onPointerDown(event: PointerEvent<HTMLDivElement>) {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
+  function onKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
+    if (count < 2) return;
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      snapTo(Math.round(targetRef.current) + 1);
+    }
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      snapTo(Math.round(targetRef.current) - 1);
+    }
+  }
+
+  function onPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    if (count < 2) return;
     draggingRef.current = true;
     movedRef.current = false;
-    pausedRef.current = true;
-    startXRef.current = event.clientX;
-    startScrollRef.current = viewport.scrollLeft;
-    viewport.setPointerCapture(event.pointerId);
-    viewport.classList.add("is-dragging");
+    velocityRef.current = 0;
+    lastXRef.current = event.clientX;
+    lastTRef.current = performance.now();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.currentTarget.classList.add("is-dragging");
   }
 
-  function onPointerMove(event: PointerEvent<HTMLDivElement>) {
-    const viewport = viewportRef.current;
-    if (!viewport || !draggingRef.current) return;
-    const delta = event.clientX - startXRef.current;
-    if (Math.abs(delta) > 6) movedRef.current = true;
-    viewport.scrollLeft = startScrollRef.current - delta;
-    wrapScroll();
+  function onPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    if (!draggingRef.current || count < 2) return;
+    const now = performance.now();
+    const dx = event.clientX - lastXRef.current;
+    const dt = Math.max(8, now - lastTRef.current);
+    if (Math.abs(dx) > 4) movedRef.current = true;
+    const delta = dx / slotWidthRef.current;
+    positionRef.current -= delta;
+    velocityRef.current = -delta * (16 / dt);
+    lastXRef.current = event.clientX;
+    lastTRef.current = now;
+    layout();
   }
 
-  function onPointerUp(event: PointerEvent<HTMLDivElement>) {
-    const viewport = viewportRef.current;
+  function onPointerUp(event: ReactPointerEvent<HTMLDivElement>) {
+    if (!draggingRef.current) return;
     draggingRef.current = false;
-    viewport?.classList.remove("is-dragging");
-    if (viewport?.hasPointerCapture(event.pointerId)) {
-      viewport.releasePointerCapture(event.pointerId);
+    event.currentTarget.classList.remove("is-dragging");
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
     }
-    wrapScroll();
-    window.setTimeout(() => {
-      pausedRef.current = false;
-    }, 900);
+    const flick = velocityRef.current * 10;
+    snapTo(Math.round(positionRef.current + flick));
   }
 
-  if (!looped.length) return null;
+  if (!count) return null;
 
   return (
     <div
-      ref={viewportRef}
-      className="account-welcome-slider"
+      ref={stageRef}
+      className="account-curve"
+      role="region"
+      aria-roledescription="carousel"
+      aria-label="Featured pins"
+      tabIndex={0}
+      onKeyDown={onKeyDown}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
-      onPointerLeave={() => {
-        if (!draggingRef.current) pausedRef.current = false;
-      }}
-      onPointerEnter={() => {
-        pausedRef.current = true;
-      }}
     >
-      <div className="account-welcome-track">
-        {looped.map((pin, index) => (
-          <Link
-            key={`${pin.id}-${index}`}
-            href={pin.href}
-            className="account-welcome-pin"
-            style={{ transform: `rotate(${TILTS[index % TILTS.length]}deg)` }}
-            draggable={false}
-            onClick={(event) => {
-              if (movedRef.current) event.preventDefault();
+      <div className="account-curve-scene">
+        {pins.map((pin, index) => (
+          <div
+            key={pin.id}
+            className="account-curve-slot"
+            ref={(node) => {
+              slotsRef.current[index] = node;
             }}
           >
-            <ProductImage
-              src={pin.image}
-              alt=""
-              width={320}
-              height={320}
-              style={{ objectFit: "cover" }}
+            <Link
+              href={pin.href}
+              className="account-curve-card"
               draggable={false}
-            />
-          </Link>
+              aria-current={active === index ? "true" : undefined}
+              onClick={(event) => {
+                if (movedRef.current) event.preventDefault();
+              }}
+            >
+              <ProductImage
+                src={pin.image}
+                alt=""
+                fill
+                sizes="(max-width: 640px) 110px, 160px"
+                style={{ objectFit: "cover" }}
+                draggable={false}
+              />
+            </Link>
+          </div>
         ))}
       </div>
     </div>
