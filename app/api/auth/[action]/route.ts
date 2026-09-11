@@ -8,6 +8,9 @@ import {
   customerAccountClientId,
   exchangeAuthorizationCode,
   isCustomerAccountConfigured,
+  isLocalHost,
+  oauthOrigin,
+  publicSiteUrl,
   readPendingAuth,
   readSessionCookies,
   refreshAccessToken,
@@ -28,6 +31,10 @@ export async function GET(request: Request) {
   if (pathname.endsWith("/login")) {
     if (!isCustomerAccountConfigured()) {
       return NextResponse.redirect(SHOPIFY_ACCOUNT_URL);
+    }
+    const site = publicSiteUrl();
+    if (isLocalHost(request) && site) {
+      return NextResponse.redirect(`${site}/api/auth/login`);
     }
     try {
       const started = await buildAuthorizationUrl(request);
@@ -70,7 +77,7 @@ export async function GET(request: Request) {
         redirectUri: callbackUrl(request),
         verifier: pending.verifier,
       });
-      return redirectWithCookies(new URL("/account", request.url).toString(), (headers) => {
+      return redirectWithCookies(`${oauthOrigin(request)}/account`, (headers) => {
         applySessionCookies(headers, tokens);
       });
     } catch (error) {

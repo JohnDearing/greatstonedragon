@@ -91,6 +91,16 @@ export function shopDomain() {
   );
 }
 
+export function publicSiteUrl() {
+  return process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "";
+}
+
+export function isLocalHost(request: Request) {
+  const host =
+    request.headers.get("x-forwarded-host") || new URL(request.url).host;
+  return host.startsWith("localhost") || host.startsWith("127.0.0.1");
+}
+
 export function requestOrigin(request: Request) {
   const url = new URL(request.url);
   const host = request.headers.get("x-forwarded-host") || url.host;
@@ -101,12 +111,17 @@ export function requestOrigin(request: Request) {
   return `${proto}://${host}`;
 }
 
+/** Shopify only allows HTTPS callbacks registered in Customer Account API settings. */
+export function oauthOrigin(request: Request) {
+  return publicSiteUrl() || requestOrigin(request);
+}
+
 export function callbackUrl(request: Request) {
-  return `${requestOrigin(request)}/api/auth/callback`;
+  return `${oauthOrigin(request)}/api/auth/callback`;
 }
 
 export function logoutRedirectUrl(request: Request) {
-  return `${requestOrigin(request)}/`;
+  return `${oauthOrigin(request)}/`;
 }
 
 function base64Url(buffer: Buffer) {
