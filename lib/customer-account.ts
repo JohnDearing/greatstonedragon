@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "crypto";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 const COOKIE = {
   access: "gsd_ca_access",
@@ -30,12 +31,40 @@ export type CustomerAccountSession = {
   expiresAt: number;
 };
 
+export type CustomerAddress = {
+  id: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  address1?: string | null;
+  address2?: string | null;
+  city?: string | null;
+  province?: string | null;
+  zip?: string | null;
+  country?: string | null;
+  territoryCode?: string | null;
+  zoneCode?: string | null;
+  formatted: string[];
+  isDefault: boolean;
+};
+
+export type CustomerAddressInput = {
+  firstName: string;
+  lastName: string;
+  address1: string;
+  address2?: string;
+  city: string;
+  zip: string;
+  territoryCode: string;
+  zoneCode?: string;
+};
+
 export type CustomerProfile = {
   displayName: string;
   firstName?: string | null;
   lastName?: string | null;
   email?: string | null;
   addressLines: string[];
+  addresses: CustomerAddress[];
 };
 
 export type CustomerOrderSummary = {
@@ -91,8 +120,17 @@ export function shopDomain() {
   );
 }
 
+const NEXTJS_SITE_URL = "https://www.greatstonedragon.com";
+
 export function publicSiteUrl() {
-  return process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "";
+  const raw = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "";
+  const storefront =
+    process.env.SHOPIFY_STOREFRONT_URL?.replace(/\/$/, "") ||
+    "https://zwyg987.greatstonedragon.com";
+  if (!raw) return NEXTJS_SITE_URL;
+  if (raw === storefront || raw.includes("zwyg987.")) return NEXTJS_SITE_URL;
+  if (raw.startsWith("http://") || raw.includes("localhost")) return NEXTJS_SITE_URL;
+  return raw;
 }
 
 export function isLocalHost(request: Request) {
@@ -111,9 +149,9 @@ export function requestOrigin(request: Request) {
   return `${proto}://${host}`;
 }
 
-/** Shopify only allows HTTPS callbacks registered in Customer Account API settings. */
-export function oauthOrigin(request: Request) {
-  return publicSiteUrl() || requestOrigin(request);
+/** Always the Next.js store. Never the Shopify theme subdomain. */
+export function oauthOrigin(_request?: Request) {
+  return publicSiteUrl();
 }
 
 export function callbackUrl(request: Request) {
@@ -356,6 +394,22 @@ export function sessionNeedsRefresh(session: Partial<CustomerAccountSession>) {
   return (session.expiresAt || 0) <= Date.now() + 30_000;
 }
 
+export async function requireLoggedIn() {
+  const session = await readSessionCookies();
+  if (!session.accessToken && !session.refreshToken) {
+    redirect("/api/auth/login");
+  }
+  return session;
+}
+
+export async function requireAccountSession(next = "/account/order") {
+  const session = await requireLoggedIn();
+  if (sessionNeedsRefresh(session)) {
+    redirect(`/api/auth/refresh?next=${encodeURIComponent(next)}`);
+  }
+  return session;
+}
+
 async function getValidAccessToken(): Promise<string | null> {
   const session = await readSessionCookies();
   return session.accessToken || null;
@@ -403,7 +457,23 @@ export async function fetchCustomerAccount() {
       lastName?: string | null;
       displayName?: string | null;
       emailAddress?: { emailAddress?: string | null } | null;
-      defaultAddress?: { formatted?: string[] | null } | null;
+      defaultAddress?: { id?: string | null; formatted?: string[] | null } | null;
+      addresses?: {
+        nodes?: {
+          id: string;
+          firstName?: string | null;
+          lastName?: string | null;
+          address1?: string | null;
+          address2?: string | null;
+          city?: string | null;
+          province?: string | null;
+          zip?: string | null;
+          country?: string | null;
+          territoryCode?: string | null;
+          zoneCode?: string | null;
+          formatted?: string[] | null;
+        }[];
+      } | null;
       orders?: {
         nodes?: {
           id: string;
@@ -422,7 +492,23 @@ export async function fetchCustomerAccount() {
         lastName
         displayName
         emailAddress { emailAddress }
-        defaultAddress { formatted }
+        defaultAddress { id formatted }
+        addresses(first: 25) {
+          nodes {
+            id
+            firstName
+            lastName
+            address1
+            address2
+            city
+            province
+            zip
+            country
+            territoryCode
+            zoneCode
+            formatted(withName: true)
+          }
+        }
         orders(first: 25) {
           nodes {
             id
@@ -440,6 +526,23 @@ export async function fetchCustomerAccount() {
   const customer = data?.customer;
   if (!customer) return null;
 
+  const defaultId = customer.defaultAddress?.id || "";
+  const addresses: CustomerAddress[] = (customer.addresses?.nodes ?? []).map((address) => ({
+    id: address.id,
+    firstName: address.firstName,
+    lastName: address.lastName,
+    address1: address.address1,
+    address2: address.address2,
+    city: address.city,
+    province: address.province,
+    zip: address.zip,
+    country: address.country,
+    territoryCode: address.territoryCode,
+    zoneCode: address.zoneCode,
+    formatted: address.formatted?.filter(Boolean) ?? [],
+    isDefault: Boolean(defaultId && address.id === defaultId),
+  }));
+
   const profile: CustomerProfile = {
     displayName:
       customer.displayName ||
@@ -449,6 +552,7 @@ export async function fetchCustomerAccount() {
     lastName: customer.lastName,
     email: customer.emailAddress?.emailAddress || null,
     addressLines: customer.defaultAddress?.formatted?.filter(Boolean) ?? [],
+    addresses,
   };
 
   const orders: CustomerOrderSummary[] = (customer.orders?.nodes ?? []).map((order) => ({
@@ -559,4 +663,104 @@ export function prettyStatus(value?: string | null) {
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+type MutationUserError = { field?: string[] | null; message: string };
+
+function mutationError(errors?: MutationUserError[] | null) {
+  return errors?.[0]?.message || "";
+}
+
+export async function updateCustomerProfile(input: {
+  firstName: string;
+  lastName: string;
+}) {
+  const data = await customerGraphql<{
+    customerUpdate?: {
+      userErrors?: MutationUserError[];
+    };
+  }>(
+    `
+    mutation UpdateCustomer($input: CustomerUpdateInput!) {
+      customerUpdate(input: $input) {
+        userErrors { field message }
+      }
+    }
+  `,
+    { input },
+  );
+  const error = mutationError(data?.customerUpdate?.userErrors);
+  if (error) throw new Error(error);
+}
+
+export async function createCustomerAddress(
+  address: CustomerAddressInput,
+  defaultAddress: boolean,
+) {
+  const data = await customerGraphql<{
+    customerAddressCreate?: {
+      userErrors?: MutationUserError[];
+    };
+  }>(
+    `
+    mutation CreateAddress($address: CustomerAddressInput!, $defaultAddress: Boolean) {
+      customerAddressCreate(address: $address, defaultAddress: $defaultAddress) {
+        userErrors { field message }
+      }
+    }
+  `,
+    { address, defaultAddress },
+  );
+  const error = mutationError(data?.customerAddressCreate?.userErrors);
+  if (error) throw new Error(error);
+}
+
+export async function updateCustomerAddress(
+  addressId: string,
+  address: CustomerAddressInput,
+  defaultAddress: boolean,
+) {
+  const data = await customerGraphql<{
+    customerAddressUpdate?: {
+      userErrors?: MutationUserError[];
+    };
+  }>(
+    `
+    mutation UpdateAddress(
+      $addressId: ID!
+      $address: CustomerAddressInput!
+      $defaultAddress: Boolean
+    ) {
+      customerAddressUpdate(
+        addressId: $addressId
+        address: $address
+        defaultAddress: $defaultAddress
+      ) {
+        userErrors { field message }
+      }
+    }
+  `,
+    { addressId, address, defaultAddress },
+  );
+  const error = mutationError(data?.customerAddressUpdate?.userErrors);
+  if (error) throw new Error(error);
+}
+
+export async function deleteCustomerAddress(addressId: string) {
+  const data = await customerGraphql<{
+    customerAddressDelete?: {
+      userErrors?: MutationUserError[];
+    };
+  }>(
+    `
+    mutation DeleteAddress($addressId: ID!) {
+      customerAddressDelete(addressId: $addressId) {
+        userErrors { field message }
+      }
+    }
+  `,
+    { addressId },
+  );
+  const error = mutationError(data?.customerAddressDelete?.userErrors);
+  if (error) throw new Error(error);
 }

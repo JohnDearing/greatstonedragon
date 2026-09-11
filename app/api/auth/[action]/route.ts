@@ -12,6 +12,7 @@ import {
   oauthOrigin,
   publicSiteUrl,
   readPendingAuth,
+  requestOrigin,
   readSessionCookies,
   refreshAccessToken,
 } from "@/lib/customer-account";
@@ -33,7 +34,11 @@ export async function GET(request: Request) {
       return NextResponse.redirect(SHOPIFY_ACCOUNT_URL);
     }
     const site = publicSiteUrl();
-    if (isLocalHost(request) && site) {
+    const host = requestOrigin(request);
+    if (
+      site &&
+      (isLocalHost(request) || host.includes("zwyg987.greatstonedragon.com"))
+    ) {
       return NextResponse.redirect(`${site}/api/auth/login`);
     }
     try {
@@ -77,7 +82,7 @@ export async function GET(request: Request) {
         redirectUri: callbackUrl(request),
         verifier: pending.verifier,
       });
-      return redirectWithCookies(`${oauthOrigin(request)}/account`, (headers) => {
+      return redirectWithCookies(`${oauthOrigin(request)}/account/order`, (headers) => {
         applySessionCookies(headers, tokens);
       });
     } catch (error) {
@@ -103,7 +108,7 @@ export async function GET(request: Request) {
   }
 
   if (pathname.endsWith("/refresh")) {
-    const next = new URL(request.url).searchParams.get("next") || "/account";
+    const next = new URL(request.url).searchParams.get("next") || "/account/order";
     const session = await readSessionCookies();
     if (!session.refreshToken) {
       return NextResponse.redirect(new URL("/api/auth/login", request.url));
