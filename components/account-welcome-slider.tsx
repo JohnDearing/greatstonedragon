@@ -36,8 +36,10 @@ export function AccountWelcomeSlider({ pins }: { pins: WelcomePin[] }) {
   const movedRef = useRef(false);
   const lastXRef = useRef(0);
   const lastTRef = useRef(0);
-  const slotWidthRef = useRef(160);
-  const radiusRef = useRef({ x: 260, z: 180 });
+  const slotWidthRef = useRef(180);
+  const radiusRef = useRef({ x: 340, z: 260 });
+  const hoveringRef = useRef(false);
+  const autoAtRef = useRef(performance.now());
   const [active, setActive] = useState(0);
 
   const count = pins.length;
@@ -54,20 +56,21 @@ export function AccountWelcomeSlider({ pins }: { pins: WelcomePin[] }) {
       if (!slot) continue;
 
       const offset = shortestOffset(index, positionRef.current, countNow);
-      const angle = offset * 0.38;
+      const angle = offset * 0.58;
       const x = Math.sin(angle) * radiusRef.current.x;
       const z = (Math.cos(angle) - 1) * radiusRef.current.z;
-      const y = Math.abs(offset) * 18;
-      const rotateY = Math.max(-20, Math.min(20, offset * 12));
-      const scale = Math.max(0.78, 1 - Math.abs(offset) * 0.07);
-      const opacity = Math.abs(offset) > 3.15 ? 0 : Math.max(0.35, 1 - Math.abs(offset) * 0.16);
-      const visible = Math.abs(offset) <= 3.2;
+      const y = (1 - Math.cos(angle)) * 70 + Math.abs(offset) * 8;
+      const rotateY = Math.max(-36, Math.min(36, offset * 22));
+      const rotateZ = Math.max(-10, Math.min(10, offset * -4.5));
+      const scale = Math.max(0.72, 1 - Math.abs(offset) * 0.09);
+      const opacity = Math.abs(offset) > 3.35 ? 0 : Math.max(0.42, 1 - Math.abs(offset) * 0.14);
+      const visible = Math.abs(offset) <= 3.4;
 
       slot.style.opacity = String(opacity);
       slot.style.visibility = visible ? "visible" : "hidden";
       slot.style.pointerEvents = Math.abs(offset) < 0.55 ? "auto" : "none";
       slot.style.zIndex = String(40 - Math.round(Math.abs(offset) * 8));
-      slot.style.transform = `translate3d(${x}px, ${y}px, ${z}px) rotateY(${rotateY}deg) scale(${scale})`;
+      slot.style.transform = `translate3d(${x}px, ${y}px, ${z}px) rotateY(${rotateY}deg) rotateZ(${rotateZ}deg) scale(${scale})`;
       slot.classList.toggle("is-active", Math.abs(offset) < 0.5);
 
       if (Math.abs(offset) < nearestAbs) {
@@ -90,10 +93,10 @@ export function AccountWelcomeSlider({ pins }: { pins: WelcomePin[] }) {
     const measure = () => {
       const width = stage.clientWidth;
       const compact = width < 640;
-      slotWidthRef.current = compact ? 108 : width < 900 ? 132 : 156;
+      slotWidthRef.current = compact ? 120 : width < 900 ? 150 : 176;
       radiusRef.current = {
-        x: Math.min(320, Math.max(170, width * 0.34)),
-        z: Math.min(240, Math.max(130, width * 0.26)),
+        x: Math.min(420, Math.max(220, width * 0.42)),
+        z: Math.min(340, Math.max(180, width * 0.34)),
       };
       layout();
     };
@@ -105,7 +108,7 @@ export function AccountWelcomeSlider({ pins }: { pins: WelcomePin[] }) {
     const reduced = prefersReducedMotion();
     let frame = 0;
 
-    const tick = () => {
+    const tick = (now: number) => {
       if (!draggingRef.current) {
         if (reduced) {
           const next = targetRef.current;
@@ -117,14 +120,23 @@ export function AccountWelcomeSlider({ pins }: { pins: WelcomePin[] }) {
           velocityRef.current *= 0.9;
           if (Math.abs(velocityRef.current) < 0.0018) {
             velocityRef.current = 0;
+            if (
+              !hoveringRef.current &&
+              now - autoAtRef.current > 2600 &&
+              Math.abs(targetRef.current - positionRef.current) < 0.01
+            ) {
+              targetRef.current += 1;
+              autoAtRef.current = now;
+            }
             const next = targetRef.current;
-            positionRef.current += (next - positionRef.current) * 0.18;
+            positionRef.current += (next - positionRef.current) * 0.16;
             if (Math.abs(next - positionRef.current) < 0.0015) {
               positionRef.current = next;
             }
           } else {
             positionRef.current += velocityRef.current;
             targetRef.current = Math.round(positionRef.current);
+            autoAtRef.current = now;
           }
         }
         layout();
@@ -142,6 +154,7 @@ export function AccountWelcomeSlider({ pins }: { pins: WelcomePin[] }) {
   function snapTo(next: number) {
     targetRef.current = next;
     velocityRef.current = 0;
+    autoAtRef.current = performance.now();
   }
 
   function onKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
@@ -161,6 +174,7 @@ export function AccountWelcomeSlider({ pins }: { pins: WelcomePin[] }) {
     draggingRef.current = true;
     movedRef.current = false;
     velocityRef.current = 0;
+    autoAtRef.current = performance.now();
     lastXRef.current = event.clientX;
     lastTRef.current = performance.now();
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -207,6 +221,13 @@ export function AccountWelcomeSlider({ pins }: { pins: WelcomePin[] }) {
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
+      onPointerEnter={() => {
+        hoveringRef.current = true;
+      }}
+      onPointerLeave={() => {
+        hoveringRef.current = false;
+        autoAtRef.current = performance.now();
+      }}
     >
       <div className="account-curve-scene">
         {pins.map((pin, index) => (
@@ -226,14 +247,16 @@ export function AccountWelcomeSlider({ pins }: { pins: WelcomePin[] }) {
                 if (movedRef.current) event.preventDefault();
               }}
             >
+            <span className="account-curve-card-frame">
               <ProductImage
                 src={pin.image}
                 alt=""
                 fill
                 sizes="(max-width: 640px) 110px, 160px"
-                style={{ objectFit: "cover" }}
+                style={{ objectFit: "contain" }}
                 draggable={false}
               />
+            </span>
             </Link>
           </div>
         ))}
