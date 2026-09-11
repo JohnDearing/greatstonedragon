@@ -1,6 +1,6 @@
 "use client";
 
-import { SHOPIFY_ACCOUNT_URL } from "@/lib/shopify-account";
+import { AccountNavIcon } from "@/components/account-nav-icon";
 import { Product, getVisibleShopNav, pinStoreMega } from "@/lib/store-data";
 import Image from "next/image";
 import Link from "next/link";
@@ -250,14 +250,7 @@ function HeaderInner() {
             >
               <SearchIcon />
             </button>
-            <a
-              href={SHOPIFY_ACCOUNT_URL}
-              className="icon-btn"
-              aria-label="Sign in"
-              onClick={closeOverlays}
-            >
-              <AccountIcon />
-            </a>
+            <AccountNavIcon onNavigate={closeOverlays} />
             <Link
               href="/cart"
               className="icon-btn cart-icon"
@@ -353,15 +346,6 @@ function SearchIcon() {
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <circle cx="11" cy="11" r="7" />
       <path d="M20 20l-3.2-3.2" />
-    </svg>
-  );
-}
-
-function AccountIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="8" r="3.25" />
-      <path d="M5.2 19.2c1.5-3.2 3.8-4.8 6.8-4.8s5.3 1.6 6.8 4.8" />
     </svg>
   );
 }
