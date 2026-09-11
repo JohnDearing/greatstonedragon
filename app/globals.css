@@ -2562,10 +2562,10 @@ h4 {
 
 .account-shell {
   display: grid;
-  grid-template-columns: 7.5rem minmax(0, 1fr);
-  gap: 2.4rem;
+  grid-template-columns: 8rem minmax(0, 1fr);
+  gap: 1.5rem;
   align-items: start;
-  max-width: 1080px;
+  width: 100%;
 }
 
 .account-side {
@@ -2593,6 +2593,9 @@ h4 {
 
 .account-main {
   min-width: 0;
+  width: 100%;
+  max-width: 56rem;
+  margin-inline: auto;
 }
 
 .account-panel-title {
@@ -2615,7 +2618,7 @@ h4 {
 }
 
 .account-profile {
-  max-width: 36rem;
+  width: 100%;
   padding-top: 0.15rem;
 }
 
@@ -3447,6 +3450,11 @@ h4 {
   .account-shell {
     grid-template-columns: 1fr;
     gap: 1.25rem;
+  }
+
+  .account-main {
+    max-width: none;
+    margin-inline: 0;
   }
 
   .account-side {
