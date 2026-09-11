@@ -15,7 +15,7 @@ export type WelcomePin = {
 type WheelSlide = WelcomePin & { key: string };
 
 const SECONDS_PER_SLIDE = 1.25;
-const ORIGIN = "50% 180%";
+const ORIGIN = "50% 220%";
 
 function padSlides(pins: WelcomePin[]): WheelSlide[] {
   if (!pins.length) return [];
@@ -130,12 +130,12 @@ export function AccountWelcomeSlider({ pins }: { pins: WelcomePin[] }) {
           >
             <Link
               href={slide.href}
-              className="account-curve-card rounded-[100px]"
+              className="account-curve-card"
               draggable={false}
               aria-current={active === index ? "true" : undefined}
               tabIndex={active === index ? 0 : -1}
             >
-              <span className="account-curve-card-frame rounded-[100px]">
+              <span className="account-curve-card-frame">
                 <ProductImage
                   src={slide.image}
                   alt=""

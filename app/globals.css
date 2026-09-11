@@ -3051,7 +3051,7 @@ h4 {
   width: var(--curve-w);
   height: var(--curve-h);
   margin-left: calc(var(--curve-w) / -2);
-  transform-origin: 50% 180%;
+  transform-origin: 50% 220%;
   will-change: transform, opacity;
   pointer-events: auto;
 }
@@ -3067,10 +3067,11 @@ h4 {
 .account-curve-card {
   position: relative;
   display: block;
-  width: 100%;
+  width: calc(100% - 22px);
   height: 100%;
+  margin: 0 auto;
   overflow: hidden;
-  border-radius: 100px;
+  border-radius: 0;
   background: #fff;
   box-shadow:
     0 16px 28px rgba(17, 17, 17, 0.16),
@@ -3079,9 +3080,9 @@ h4 {
 
 .account-curve-card-frame {
   position: absolute;
-  inset: 8px;
+  inset: 0;
   overflow: hidden;
-  border-radius: 100px;
+  border-radius: 0;
   background: #f4f4f4;
 }
 
