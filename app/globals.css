@@ -2976,7 +2976,7 @@ h4 {
   background: #fff;
   border-radius: 1.85rem;
   box-shadow: 0 14px 40px rgba(17, 17, 17, 0.08);
-  padding: 1.85rem 1.9rem 0.85rem;
+  padding: 1.75rem 1.75rem 0;
   overflow: hidden;
 }
 
@@ -2989,7 +2989,7 @@ h4 {
 
 .account-welcome h1 {
   margin: 0;
-  font-size: 1.7rem;
+  font-size: 1.5rem;
   color: #111;
   font-weight: 800;
   letter-spacing: -0.03em;
@@ -3024,12 +3024,12 @@ h4 {
 }
 
 .account-curve {
-  --curve-w: 118px;
-  --curve-h: 188px;
+  --curve-w: 142px;
+  --curve-h: 142px;
   position: relative;
-  height: 280px;
-  margin: 0.2rem -0.4rem 0.4rem;
-  overflow: hidden;
+  height: 198px;
+  margin: 0.7rem -1.75rem 0;
+  overflow: visible;
 }
 
 .account-curve:focus-visible {
@@ -3047,42 +3047,39 @@ h4 {
 .account-curve-slot {
   position: absolute;
   left: 50%;
-  top: 0.35rem;
+  top: 0.15rem;
   width: var(--curve-w);
   height: var(--curve-h);
   margin-left: calc(var(--curve-w) / -2);
-  transform-origin: 50% 220%;
+  transform-origin: 50% 280%;
   will-change: transform, opacity;
   pointer-events: auto;
 }
 
 @media (max-width: 980px) {
   .account-curve {
-    --curve-w: 100px;
-    --curve-h: 160px;
-    height: 240px;
+    --curve-w: 118px;
+    --curve-h: 118px;
+    height: 168px;
   }
 }
 
 .account-curve-card {
   position: relative;
   display: block;
-  width: calc(100% - 22px);
+  width: 100%;
   height: 100%;
-  margin: 0 auto;
   overflow: hidden;
-  border-radius: 0;
-  background: #fff;
-  box-shadow:
-    0 16px 28px rgba(17, 17, 17, 0.16),
-    0 1px 0 rgba(255, 255, 255, 0.45) inset;
+  border-radius: 1.15rem;
+  background: #f4f4f4;
+  box-shadow: 0 12px 28px rgba(17, 17, 17, 0.14);
 }
 
 .account-curve-card-frame {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  border-radius: 0;
+  border-radius: inherit;
   background: #f4f4f4;
 }
 
@@ -3092,9 +3089,7 @@ h4 {
 }
 
 .account-curve-slot.is-active .account-curve-card {
-  box-shadow:
-    0 22px 36px rgba(17, 17, 17, 0.2),
-    0 0 0 2px rgba(158, 15, 31, 0.12);
+  box-shadow: 0 14px 32px rgba(17, 17, 17, 0.16);
 }
 
 .account-head {
@@ -3512,10 +3507,10 @@ h4 {
   }
 
   .account-curve {
-    --curve-w: 92px;
-    --curve-h: 148px;
-    height: 220px;
-    margin: 0.15rem -0.35rem 0.2rem;
+    --curve-w: 104px;
+    --curve-h: 104px;
+    height: 150px;
+    margin: 0.45rem -1rem 0;
   }
 
   .account-order-card-link {

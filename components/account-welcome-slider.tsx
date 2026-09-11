@@ -15,13 +15,14 @@ export type WelcomePin = {
 type WheelSlide = WelcomePin & { key: string };
 
 const SECONDS_PER_SLIDE = 1.25;
-const ORIGIN = "50% 220%";
+const ORIGIN = "50% 280%";
 
 function padSlides(pins: WelcomePin[]): WheelSlide[] {
   if (!pins.length) return [];
-  const copies = pins.length >= 10 ? 1 : Math.ceil(10 / pins.length);
+  const base = pins.slice(0, 12);
+  const copies = base.length >= 10 ? 1 : Math.ceil(10 / base.length);
   return Array.from({ length: copies }, (_, copy) =>
-    pins.map((pin) => ({ ...pin, key: `${pin.id}-${copy}` })),
+    base.map((pin) => ({ ...pin, key: `${pin.id}-${copy}` })),
   ).flat();
 }
 
@@ -61,7 +62,8 @@ export function AccountWelcomeSlider({ pins }: { pins: WelcomePin[] }) {
       slots.forEach((slot, index) => {
         const angle = wrapAngle(Number(g.getProperty(slot, "rotation")) || 0);
         const abs = Math.abs(angle);
-        slot.style.opacity = String(abs > 115 ? 0 : Math.max(0.38, 1 - abs / 140));
+        slot.style.opacity = abs > 72 ? "0" : "1";
+        slot.style.pointerEvents = abs > 72 ? "none" : "auto";
         slot.classList.toggle("is-active", abs < step / 2);
         if (abs < nearestAbs) {
           nearestAbs = abs;
@@ -130,7 +132,7 @@ export function AccountWelcomeSlider({ pins }: { pins: WelcomePin[] }) {
           >
             <Link
               href={slide.href}
-              className="account-curve-card"
+              className="account-curve-card rounded-[18px]"
               draggable={false}
               aria-current={active === index ? "true" : undefined}
               tabIndex={active === index ? 0 : -1}
