@@ -12,6 +12,11 @@ export type Product = {
   collection: "new-releases" | "international-preorder" | "fantasy" | "all-products";
   colors: [string, string];
   image?: string;
+  images?: string[];
+  media?: ProductMedia[];
+  createdAt?: string;
+  publishedAt?: string;
+  popularityRank?: number;
   rating: number;
   reviews: number;
   /** Shopify product tags used for series / extra filters */
@@ -22,6 +27,13 @@ export type Product = {
   variantId?: string;
   /** All Shopify variants when available (for board pin matching) */
   variants?: ProductVariant[];
+};
+
+export type ProductMedia = {
+  type: "image" | "video" | "external-video";
+  url: string;
+  alt?: string;
+  preview?: string;
 };
 
 export type ProductVariant = {

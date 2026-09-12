@@ -15,6 +15,7 @@ type ShopCollectionBarProps = {
   products: Product[];
   activeCollection?: string;
   activeSub?: string;
+  activeSort?: string;
   collectionImages?: Record<string, string>;
 };
 
@@ -22,6 +23,7 @@ export function ShopCollectionBar({
   products,
   activeCollection,
   activeSub,
+  activeSort,
   collectionImages,
 }: ShopCollectionBarProps) {
   const scoped = products.filter((product) =>
@@ -55,7 +57,10 @@ export function ShopCollectionBar({
           return (
             <Link
               key={item.key || "all"}
-              href={buildShopHref({ collection: item.key || undefined })}
+              href={buildShopHref({
+                collection: item.key || undefined,
+                sort: activeSort,
+              })}
               className={`shop-filter-chip ${isActive ? "is-active" : ""}`}
               aria-current={isActive ? "page" : undefined}
             >
@@ -85,6 +90,7 @@ export function ShopCollectionBar({
                   href={buildShopHref({
                     collection: activeCollection,
                     sub: item.key || undefined,
+                    sort: activeSort,
                   })}
                   className={`shop-series-card ${isActive ? "is-active" : ""}`}
                   aria-current={isActive ? "page" : undefined}

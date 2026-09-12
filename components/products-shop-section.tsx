@@ -1,14 +1,17 @@
 import { ShopBoardCard } from "@/components/shop-board-card";
 import { ShopCollectionBar } from "@/components/shop-collection-bar";
 import { ShopProductCard } from "@/components/shop-product-card";
+import { ShopSortBar } from "@/components/shop-sort-bar";
 import { hydrateBoardsFromCatalog } from "@/lib/board-catalog";
 import { buildPriceBoardsFromCatalog } from "@/lib/price-board-catalog";
 import {
   collectionLabel,
   isInternationalPreorderProduct,
+  parseShopSort,
   productMatchesCollection,
   productMatchesSeries,
   seriesLabel,
+  sortCatalogProducts,
 } from "@/lib/shop-filters";
 import { BOARDS_UI_ENABLED } from "@/lib/feature-flags";
 import { Product } from "@/lib/store-data";
@@ -17,6 +20,7 @@ type ProductsShopSectionProps = {
   products: Product[];
   activeCollection?: string;
   activeSub?: string;
+  activeSort?: string;
   quickSlug?: string;
   collectionImages?: Record<string, string>;
 };
@@ -153,8 +157,10 @@ export function ProductsShopSection({
   products,
   activeCollection,
   activeSub,
+  activeSort,
   collectionImages,
 }: ProductsShopSectionProps) {
+  const sort = parseShopSort(activeSort);
   const effectiveCollection =
     !BOARDS_UI_ENABLED && activeCollection === "boards"
       ? undefined
@@ -179,8 +185,11 @@ export function ProductsShopSection({
   const scopedProducts = products.filter((product) =>
     productMatchesCollection(product, effectiveCollection),
   );
-  const seriesFiltered = scopedProducts.filter((product) =>
-    productMatchesSeries(product, effectiveSub),
+  const seriesFiltered = sortCatalogProducts(
+    scopedProducts.filter((product) =>
+      productMatchesSeries(product, effectiveSub),
+    ),
+    sort,
   );
 
   const groupedSections = groupProductsByCategory(seriesFiltered);
@@ -221,11 +230,19 @@ export function ProductsShopSection({
             products={products}
             activeCollection={effectiveCollection}
             activeSub={effectiveSub}
+            activeSort={sort}
             collectionImages={collectionImages}
           />
         </div>
 
         <div className="products-shop-main">
+          {!isBoardsCollection ? (
+            <ShopSortBar
+              activeCollection={effectiveCollection}
+              activeSub={effectiveSub}
+              activeSort={sort}
+            />
+          ) : null}
           {isBoardsCollection ? (
             <>
               {showPriceBoards ? <PriceBoardsGrid products={products} /> : null}

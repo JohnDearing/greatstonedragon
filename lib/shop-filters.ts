@@ -243,10 +243,39 @@ export function seriesLabel(
   );
 }
 
-export function buildShopHref(input: { collection?: string; sub?: string }) {
+export type ShopSort = "newest" | "popularity";
+
+export function parseShopSort(value?: string): ShopSort {
+  return value === "popularity" ? "popularity" : "newest";
+}
+
+function productTimestamp(product: Product) {
+  const raw = product.publishedAt || product.createdAt;
+  const time = raw ? Date.parse(raw) : Number.NaN;
+  return Number.isFinite(time) ? time : 0;
+}
+
+export function sortCatalogProducts(products: Product[], sort: ShopSort) {
+  const next = [...products];
+  if (sort === "popularity") {
+    next.sort(
+      (a, b) => (a.popularityRank ?? 9999) - (b.popularityRank ?? 9999),
+    );
+    return next;
+  }
+  next.sort((a, b) => productTimestamp(b) - productTimestamp(a));
+  return next;
+}
+
+export function buildShopHref(input: {
+  collection?: string;
+  sub?: string;
+  sort?: string;
+}) {
   const params = new URLSearchParams();
   if (input.collection) params.set("collection", input.collection);
   if (input.sub) params.set("sub", input.sub);
+  if (input.sort && input.sort !== "newest") params.set("sort", input.sort);
   const query = params.toString();
   return query ? `/products?${query}` : "/products";
 }

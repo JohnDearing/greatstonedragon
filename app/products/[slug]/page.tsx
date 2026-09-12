@@ -1,7 +1,7 @@
 import { ProductActions } from "@/components/product-actions";
 import { ProductCard } from "@/components/product-card";
 import { ProductDescription } from "@/components/product-description";
-import { ProductImage } from "@/components/product-image";
+import { ProductGallery } from "@/components/product-gallery";
 import { PromoPopupHost } from "@/components/promo-popup-host";
 import { getCatalogProductBySlug, getCatalogProducts } from "@/lib/catalog";
 import Link from "next/link";
@@ -23,22 +23,11 @@ export default async function ProductDetailsPage({
     )
     .slice(0, 4);
 
-  const imageSrc = product.image || "/images/product/product1.png";
-
   return (
     <main className="page-block single-product-page">
       <section className="container product-layout">
         <div className="product-media-col">
-          <div className="product-media">
-            <ProductImage
-              src={imageSrc}
-              alt={product.name}
-              width={900}
-              height={900}
-              className="product-media-img"
-              priority
-            />
-          </div>
+          <ProductGallery product={product} />
         </div>
 
         <div className="product-info">

@@ -8,6 +8,7 @@ type ProductsPageProps = {
     collection?: string;
     sub?: string;
     quick?: string;
+    sort?: string;
   }>;
 };
 
@@ -26,6 +27,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         products={catalog}
         activeCollection={params.collection || params.category}
         activeSub={params.sub}
+        activeSort={params.sort}
         collectionImages={collectionImages}
       />
       <PromoPopupHost

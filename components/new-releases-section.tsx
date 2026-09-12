@@ -2,10 +2,12 @@
 
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { ProductImage } from "@/components/product-image";
+import { ProductVariantModal } from "@/components/product-variant-modal";
 import { prefersReducedMotion, registerGsap } from "@/lib/gsap-client";
+import { hasPinVariantPicker } from "@/lib/product-variants";
 import { Product, money } from "@/lib/store-data";
 import Link from "next/link";
-import { useLayoutEffect, useRef } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 
 const fallbackArt = [
   "/images/home/ReleaseCard1.png",
@@ -88,6 +90,8 @@ function releasePrice(product: Product) {
 
 export function NewReleasesSection({ products }: { products: Product[] }) {
   const sectionRef = useRef<HTMLElement>(null);
+  const [pickerProduct, setPickerProduct] = useState<Product | null>(null);
+  const closePicker = useCallback(() => setPickerProduct(null), []);
 
   const items = (products.length ? products.slice(0, 4) : placeholderReleases).map(
     (product, index) => ({
@@ -206,16 +210,26 @@ export function NewReleasesSection({ products }: { products: Product[] }) {
               <div className="release-body">
                 <Link href={`/products/${product.slug}`}>{product.name}</Link>
                 <p>{releasePrice(product)}</p>
-                <AddToCartButton
-                  className="release-cart"
-                  product={{
-                    id: product.id,
-                    slug: product.slug,
-                    name: product.name,
-                    price: product.price,
-                    variantId: product.variantId,
-                  }}
-                />
+                {hasPinVariantPicker(product.variants) ? (
+                  <button
+                    type="button"
+                    className="release-cart"
+                    onClick={() => setPickerProduct(product)}
+                  >
+                    Add to Cart
+                  </button>
+                ) : (
+                  <AddToCartButton
+                    className="release-cart"
+                    product={{
+                      id: product.id,
+                      slug: product.slug,
+                      name: product.name,
+                      price: product.price,
+                      variantId: product.variantId,
+                    }}
+                  />
+                )}
               </div>
             </article>
           ))}
@@ -227,6 +241,9 @@ export function NewReleasesSection({ products }: { products: Product[] }) {
           </Link>
         </div>
       </div>
+      {pickerProduct ? (
+        <ProductVariantModal product={pickerProduct} onClose={closePicker} />
+      ) : null}
     </section>
   );
 }

@@ -1,4 +1,4 @@
-import { Product } from "./store-data";
+import { Product, type ProductMedia } from "./store-data";
 
 type ShopifyMoney = {
   amount: string;
@@ -28,7 +28,10 @@ type ShopifyProductNode = {
   tags: string[];
   productType: string;
   featuredImage?: { url: string; altText?: string | null } | null;
-  images?: { nodes: { url: string }[] };
+  createdAt?: string;
+  publishedAt?: string;
+  images?: { nodes: { url: string; altText?: string | null }[] };
+  media?: { nodes: ShopifyMediaNode[] };
   priceRange?: { minVariantPrice?: ShopifyMoney };
   compareAtPriceRange?: { minVariantPrice?: ShopifyMoney };
   collections?: {
@@ -37,11 +40,23 @@ type ShopifyProductNode = {
   variants?: { nodes: ShopifyVariantNode[] };
 };
 
+type ShopifyMediaNode = {
+  alt?: string | null;
+  mediaContentType?: string;
+  image?: { url?: string | null; altText?: string | null } | null;
+  previewImage?: { url?: string | null } | null;
+  sources?: { url?: string | null; mimeType?: string | null; format?: string | null }[];
+  embedUrl?: string | null;
+  originUrl?: string | null;
+};
+
 type AjaxProduct = {
   id: number | string;
   handle: string;
   title: string;
   body_html?: string;
+  created_at?: string;
+  published_at?: string;
   tags?: string[] | string;
   product_type?: string;
   variants?: {
@@ -61,7 +76,7 @@ type ShopifyAuth =
 
 const PRODUCTS_QUERY = `
   query CatalogProducts($first: Int!, $after: String) {
-    products(first: $first, after: $after) {
+    products(first: $first, after: $after, sortKey: BEST_SELLING) {
       pageInfo {
         hasNextPage
         endCursor
@@ -74,13 +89,45 @@ const PRODUCTS_QUERY = `
         descriptionHtml
         tags
         productType
+        createdAt
+        publishedAt
         featuredImage {
           url
           altText
         }
-        images(first: 3) {
+        images(first: 25) {
           nodes {
             url
+            altText
+          }
+        }
+        media(first: 25) {
+          nodes {
+            alt
+            mediaContentType
+            ... on MediaImage {
+              image {
+                url
+                altText
+              }
+            }
+            ... on Video {
+              previewImage {
+                url
+              }
+              sources {
+                url
+                mimeType
+                format
+              }
+            }
+            ... on ExternalVideo {
+              embedUrl
+              originUrl
+              previewImage {
+                url
+              }
+            }
           }
         }
         priceRange {
@@ -390,6 +437,67 @@ function toVariantGid(id: number | string) {
   return `gid://shopify/ProductVariant/${raw}`;
 }
 
+function pickVideoSource(
+  sources: ShopifyMediaNode["sources"],
+): string | undefined {
+  if (!sources?.length) return undefined;
+  const mp4 = sources.find(
+    (source) =>
+      source.mimeType?.includes("mp4") ||
+      source.format === "mp4" ||
+      source.url?.includes(".mp4"),
+  );
+  return mp4?.url || sources[0]?.url || undefined;
+}
+
+function mapMediaNodes(nodes: ShopifyMediaNode[] | undefined): ProductMedia[] {
+  if (!nodes?.length) return [];
+  const items: ProductMedia[] = [];
+
+  for (const node of nodes) {
+    const alt = node.alt || node.image?.altText || undefined;
+    const imageUrl = node.image?.url;
+    if (imageUrl) {
+      items.push({ type: "image", url: imageUrl, alt });
+      continue;
+    }
+
+    const videoUrl = pickVideoSource(node.sources);
+    if (videoUrl) {
+      items.push({
+        type: "video",
+        url: videoUrl,
+        alt,
+        preview: node.previewImage?.url || undefined,
+      });
+      continue;
+    }
+
+    const embed = node.embedUrl || node.originUrl;
+    if (embed) {
+      items.push({
+        type: "external-video",
+        url: embed,
+        alt,
+        preview: node.previewImage?.url || undefined,
+      });
+    }
+  }
+
+  return items;
+}
+
+function uniqueUrls(urls: (string | undefined | null)[]) {
+  const seen = new Set<string>();
+  const next: string[] = [];
+  for (const url of urls) {
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    next.push(url);
+  }
+  return next;
+}
+
 function pickVariantId(
   variants: ShopifyVariantNode[] | undefined,
 ): string | undefined {
@@ -398,7 +506,10 @@ function pickVariantId(
   return (available ?? variants[0]).id;
 }
 
-function mapGraphqlProduct(node: ShopifyProductNode): Product {
+function mapGraphqlProduct(
+  node: ShopifyProductNode,
+  popularityRank = 0,
+): Product {
   const description = stripHtml(node.descriptionHtml || node.description || "");
   const variants = node.variants?.nodes ?? [];
   const primaryVariant =
@@ -412,8 +523,18 @@ function mapGraphqlProduct(node: ShopifyProductNode): Product {
     node.compareAtPriceRange?.minVariantPrice?.amount ?? 0,
   );
   const tags = node.tags ?? [];
-  const image =
-    node.featuredImage?.url || node.images?.nodes?.[0]?.url || undefined;
+  const media = mapMediaNodes(node.media?.nodes);
+  const images = uniqueUrls([
+    ...media.filter((item) => item.type === "image").map((item) => item.url),
+    ...(node.images?.nodes?.map((item) => item.url) ?? []),
+    node.featuredImage?.url,
+    ...variants.map((variant) => variant.image?.url),
+  ]);
+  const gallery =
+    media.length > 0
+      ? media
+      : images.map((url) => ({ type: "image" as const, url }));
+  const image = node.featuredImage?.url || images[0] || gallery[0]?.url;
 
   return {
     id: node.id,
@@ -450,6 +571,11 @@ function mapGraphqlProduct(node: ShopifyProductNode): Product {
     })),
     colors: ["#eecbd7", "#d4a4b9"],
     image,
+    images,
+    media: gallery,
+    createdAt: node.createdAt,
+    publishedAt: node.publishedAt,
+    popularityRank,
     rating: 5,
     reviews: 0,
     variantId: pickVariantId(variants),
@@ -465,13 +591,14 @@ function mapGraphqlProduct(node: ShopifyProductNode): Product {
   };
 }
 
-function mapAjaxProduct(node: AjaxProduct): Product {
+function mapAjaxProduct(node: AjaxProduct, popularityRank = 0): Product {
   const tags = normalizeTags(node.tags);
   const description = stripHtml(node.body_html || "");
   const variants = node.variants ?? [];
   const primaryVariant = variants[0];
   const price = Number(primaryVariant?.price ?? 0);
   const compareAt = Number(primaryVariant?.compare_at_price ?? 0);
+  const images = uniqueUrls(node.images?.map((item) => item.src) ?? []);
 
   return {
     id: String(node.id),
@@ -495,7 +622,12 @@ function mapAjaxProduct(node: AjaxProduct): Product {
     tags,
     productType: node.product_type || undefined,
     colors: ["#eecbd7", "#d4a4b9"],
-    image: node.images?.[0]?.src,
+    image: images[0],
+    images,
+    media: images.map((url) => ({ type: "image" as const, url })),
+    createdAt: node.created_at,
+    publishedAt: node.published_at,
+    popularityRank,
     rating: 5,
     reviews: 0,
     variantId: primaryVariant?.id
@@ -524,7 +656,9 @@ async function fetchAjaxProducts(domain: string): Promise<Product[]> {
   }
 
   const json = (await response.json()) as { products?: AjaxProduct[] };
-  return (json.products ?? []).map(mapAjaxProduct);
+  return (json.products ?? []).map((product, index) =>
+    mapAjaxProduct(product, index),
+  );
 }
 
 type CatalogProductsResponse = {
@@ -621,7 +755,7 @@ export async function fetchShopifyProducts(): Promise<Product[] | null> {
       if (nodes.length >= 500) break;
     }
 
-    const mapped = nodes.map(mapGraphqlProduct);
+    const mapped = nodes.map((node, index) => mapGraphqlProduct(node, index));
     if (mapped.length) {
       const images = await fetchCollectionImages();
       if (images.size) {

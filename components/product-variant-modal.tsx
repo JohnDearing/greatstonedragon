@@ -35,6 +35,10 @@ function galleryImages(product: Product, variants: ProductVariant[]) {
   };
 
   add(product.image);
+  for (const src of product.images ?? []) add(src);
+  for (const item of product.media ?? []) {
+    if (item.type === "image") add(item.url);
+  }
   for (const variant of variants) add(variant.image);
   return images;
 }

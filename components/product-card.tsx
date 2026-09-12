@@ -1,10 +1,13 @@
 "use client";
 
+import { hasPinVariantPicker } from "@/lib/product-variants";
 import { Product, money } from "@/lib/store-data";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useCallback, useState } from "react";
 import { AddToCartButton } from "./add-to-cart-button";
 import { ProductImage } from "./product-image";
+import { ProductVariantModal } from "./product-variant-modal";
 
 export function ProductCard({
   product,
@@ -13,6 +16,10 @@ export function ProductCard({
   product: Product;
   index: number;
 }) {
+  const needsVariantPicker = hasPinVariantPicker(product.variants);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const closePicker = useCallback(() => setPickerOpen(false), []);
+
   return (
     <motion.article
       className="product-tile"
@@ -53,16 +60,29 @@ export function ProductCard({
               : "Shopify product"}
           </small>
         </div>
-        <AddToCartButton
-          product={{
-            id: product.id,
-            slug: product.slug,
-            name: product.name,
-            price: product.price,
-            variantId: product.variantId,
-          }}
-        />
+        {needsVariantPicker ? (
+          <button
+            type="button"
+            className="cta-button"
+            onClick={() => setPickerOpen(true)}
+          >
+            Add to Cart
+          </button>
+        ) : (
+          <AddToCartButton
+            product={{
+              id: product.id,
+              slug: product.slug,
+              name: product.name,
+              price: product.price,
+              variantId: product.variantId,
+            }}
+          />
+        )}
       </div>
+      {needsVariantPicker && pickerOpen ? (
+        <ProductVariantModal product={product} onClose={closePicker} />
+      ) : null}
     </motion.article>
   );
 }

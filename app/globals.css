@@ -2264,9 +2264,12 @@ h4 {
   min-width: 0;
 }
 
-.product-media {
+.product-gallery {
   position: sticky;
   top: 1.5rem;
+}
+
+.product-media {
   border-radius: var(--radius-lg);
   border: 1px solid #dfbac6;
   min-height: 520px;
@@ -2275,12 +2278,62 @@ h4 {
 }
 
 .product-media-img,
-.product-media-fallback {
+.product-media-fallback,
+.product-media-video,
+.product-media-embed {
   width: 100%;
   height: 100%;
   min-height: 520px;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
+}
+
+.product-media-embed {
+  border: 0;
+}
+
+.product-gallery-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.product-gallery-thumb {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #dfbac6;
+  border-radius: 0.7rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.product-gallery-thumb.is-active {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 1px var(--brand);
+}
+
+.product-gallery-thumb-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+.product-gallery-play {
+  position: absolute;
+  inset: auto 0.3rem 0.3rem auto;
+  width: 1.35rem;
+  height: 1.35rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(17, 17, 17, 0.72);
+  color: #fff;
+  font-size: 0.62rem;
+  line-height: 1;
 }
 
 .product-info h1 {
@@ -4936,6 +4989,45 @@ h4 {
 
 .products-shop-block + .products-shop-block {
   margin-top: 2.4rem;
+}
+
+.shop-sort-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0 0 0.35rem;
+}
+
+.shop-sort-label {
+  margin-right: 0.25rem;
+  color: #8a6f74;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.shop-sort-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0.25rem 0.8rem;
+  border: 1px solid #ead0d4;
+  border-radius: 999px;
+  background: #fff;
+  color: #5f4a4e;
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.shop-sort-chip.is-active,
+.shop-sort-chip:hover {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
 }
 
 .products-shop-block-head {
