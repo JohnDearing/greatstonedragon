@@ -7,18 +7,11 @@ import { StoreHeader } from "@/components/store-header";
 import { StoreToaster } from "@/components/store-toaster";
 import "./globals.css";
 
-const raleway = localFont({
-  src: "../public/fonts/Raleway-VariableFont_wght.ttf",
+const alexanderQuill = localFont({
+  src: "../public/fonts/AlexanderQuillW01-Regular.ttf",
   variable: "--font-primary",
   display: "swap",
-  weight: "100 900",
-});
-
-const montserrat = localFont({
-  src: "../public/fonts/Montserrat-VariableFont_wght.ttf",
-  variable: "--font-display",
-  display: "swap",
-  weight: "100 900",
+  weight: "400",
 });
 
 export const metadata: Metadata = {
@@ -41,7 +34,7 @@ export default function RootLayout({
     <html lang="en">
       <body
         suppressHydrationWarning
-        className={`${raleway.variable} ${montserrat.variable}`}
+        className={`${alexanderQuill.variable} ${alexanderQuill.className}`}
       >
         <CartProvider>
           <StoreHeader />

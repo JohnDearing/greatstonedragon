@@ -31,9 +31,10 @@ body {
 }
 
 body {
+  --font-display: var(--font-primary);
   background: white;
   color: var(--text);
-  font-family: var(--font-primary), system-ui, sans-serif;
+  font-family: var(--font-primary), Georgia, "Times New Roman", serif;
 }
 
 /* Progressive type scale for headings + body copy on laptop/desktop only. */
