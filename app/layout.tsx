@@ -7,9 +7,16 @@ import { StoreHeader } from "@/components/store-header";
 import { StoreToaster } from "@/components/store-toaster";
 import "./globals.css";
 
+const raleway = localFont({
+  src: "../public/fonts/Raleway-VariableFont_wght.ttf",
+  variable: "--font-primary",
+  display: "swap",
+  weight: "100 900",
+});
+
 const alexanderQuill = localFont({
   src: "../public/fonts/AlexanderQuillW01-Regular.ttf",
-  variable: "--font-primary",
+  variable: "--font-display",
   display: "swap",
   weight: "400",
 });
@@ -34,7 +41,7 @@ export default function RootLayout({
     <html lang="en">
       <body
         suppressHydrationWarning
-        className={`${alexanderQuill.variable} ${alexanderQuill.className}`}
+        className={`${raleway.variable} ${alexanderQuill.variable}`}
       >
         <CartProvider>
           <StoreHeader />
