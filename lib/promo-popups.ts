@@ -1,9 +1,13 @@
-import { isInternationalPreorderProduct } from "@/lib/shop-filters";
+import {
+  isFantasyPreorderCollection,
+  isFantasyPreorderProduct,
+  isInternationalPreorderProduct,
+} from "@/lib/shop-filters";
 import type { Product } from "@/lib/store-data";
 
 export type PromoProductContext = Pick<
   Product,
-  "collection" | "badge" | "shopifyCollections"
+  "collection" | "badge" | "shopifyCollections" | "tags" | "name"
 >;
 
 export type PromoPopupContext = {
@@ -23,7 +27,7 @@ export type PromoPopupConfig = {
   note?: string;
 };
 
-export { isInternationalPreorderProduct };
+export { isFantasyPreorderProduct, isInternationalPreorderProduct };
 
 export const PROMO_POPUPS: PromoPopupConfig[] = [
   {
@@ -39,11 +43,31 @@ export const PROMO_POPUPS: PromoPopupConfig[] = [
     note: "No promo code needed. Offer is automatically applied at checkout!",
   },
   {
+    id: "fantasy-preorder",
+    storageKey: "gsd_promo_fantasy_preorder_v1",
+    match: ({ collection, category, page, product }) => {
+      if (page === "product-detail") {
+        return Boolean(product && isFantasyPreorderProduct(product));
+      }
+      return (
+        page === "products" &&
+        !product &&
+        isFantasyPreorderCollection(collection || category)
+      );
+    },
+    title: "Fantasy Preorder Alert!",
+    body: "You are purchasing a fantasy pin preorder. This item is not currently in production and is expected to ship approximately 3–6 months after the preorder closes, depending on manufacturing timelines and any unforeseen production delays.",
+  },
+  {
     id: "international-preorder",
     storageKey: "gsd_promo_international_preorder_v1",
     match: ({ page, product }) =>
       page === "product-detail" &&
-      Boolean(product && isInternationalPreorderProduct(product)),
+      Boolean(
+        product &&
+          isInternationalPreorderProduct(product) &&
+          !isFantasyPreorderProduct(product),
+      ),
     title: "International Preorder Alert!",
     body: "This is an international preorder. Disneyland Paris items are expected to ship early to mid the month following your order. Asia items are expected to ship approximately 3-4 weeks after your order is placed. Shipping timelines may vary due to international transit, customs processing, or other unforeseen delays.",
   },

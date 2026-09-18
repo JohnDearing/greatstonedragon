@@ -79,6 +79,8 @@ export default async function ProductDetailsPage({
           collection: product.collection,
           badge: product.badge,
           shopifyCollections: product.shopifyCollections,
+          tags: product.tags,
+          name: product.name,
         }}
       />
     </main>

@@ -6489,6 +6489,10 @@ h6 {
   font-size: 0.82rem;
 }
 
+.promo-popup--alert .promo-popup-dismiss {
+  color: var(--brand);
+}
+
 .promo-popup-dismiss input {
   width: 0.95rem;
   height: 0.95rem;

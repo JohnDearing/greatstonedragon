@@ -89,6 +89,13 @@ const INTERNATIONAL_PREORDER_COLLECTION_HANDLES = new Set([
   "international",
 ]);
 
+const FANTASY_PREORDER_COLLECTION_HANDLES = new Set([
+  "fantasy-preorders",
+  "fantasy-preorder",
+  "fantasy-pre-orders",
+  "fantasy-pre-order",
+]);
+
 export function isShopifyInternationalPreorder(product: Product) {
   return Boolean(
     product.shopifyCollections?.some((item) =>
@@ -119,6 +126,12 @@ export function productMatchesCollection(
       isShopifyInternationalPreorder(product)
     );
   }
+  if (
+    collection === "fantasy-preorder" ||
+    collection === "fantasy-preorders"
+  ) {
+    return isFantasyPreorderProduct(product);
+  }
   if (collection === "stickers") return product.category === "stickers";
   if (collection === "accessories") {
     return (
@@ -136,6 +149,50 @@ export function isInternationalPreorderProduct(
   product: Pick<Product, "collection" | "badge" | "shopifyCollections">,
 ) {
   return productMatchesCollection(product as Product, "international-preorder");
+}
+
+export function isShopifyFantasyPreorder(
+  product: Pick<Product, "shopifyCollections">,
+) {
+  return Boolean(
+    product.shopifyCollections?.some((item) =>
+      FANTASY_PREORDER_COLLECTION_HANDLES.has(item.handle),
+    ),
+  );
+}
+
+export function isFantasyPreorderCollection(value?: string) {
+  return (
+    value === "fantasy" ||
+    value === "fantasy-preorder" ||
+    value === "fantasy-preorders"
+  );
+}
+
+export function isFantasyPreorderProduct(
+  product: Pick<
+    Product,
+    "collection" | "badge" | "shopifyCollections" | "tags" | "name"
+  >,
+) {
+  if (isShopifyFantasyPreorder(product)) return true;
+  if (isShopifyInternationalPreorder(product as Product)) return false;
+
+  const tags = (product.tags ?? []).join(" ").toLowerCase();
+  const name = (product.name ?? "").toLowerCase();
+  const hay = `${name} ${tags}`;
+  const handles = product.shopifyCollections?.map((item) => item.handle) ?? [];
+
+  if (/\bfantasy[- ]pre-?orders?\b/.test(hay)) return true;
+
+  const isPreorder =
+    product.badge === "Preorder" || /\bpre-?order\b/.test(hay);
+  const isFantasy =
+    product.collection === "fantasy" ||
+    handles.includes("fantasy") ||
+    /\bfantasy\b/.test(hay);
+
+  return isPreorder && isFantasy;
 }
 
 export function productMatchesSeries(product: Product, series?: string) {
