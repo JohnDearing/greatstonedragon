@@ -50,23 +50,152 @@ const TheStory = () => {
             ))}
           </div>
         </aside>
+
         <div className="about-story-content">
-          <h2>The Story</h2>
+          <h2>My Story</h2>
           <p>
-            Great Stone Dragon began with a single obsession: Disney pin
-            trading. What started as a hobby grew into something far more
-            personal a mission to create the pins that the mainstream never
-            made. Every design in this shop is born from a love for characters
-            and stories that often do not get the love and attention they
-            deserve. The overlooked heroes, the underrated villains, the beloved
-            sidekicks who never quite made it onto official merchandise. Each
-            fantasy pin is commissioned directly from talented artists, funded
-            out of pocket, and manufactured through a meticulous nine-stage
-            process that ensures every piece meets collector-grade standards.
+            My love for pin collecting started completely unexpectedly during a
+            weekend trip to Disneyland with my husband and daughter.
+          </p>
+          <p>
+            Our very first purchase was a Marvel mystery pack with five pins
+            inside. I still remember looking at the price and thinking, “$45 for
+            five pins?!” At the time, I had no idea that one little mystery pack
+            was about to send me down such a huge rabbit hole.
+          </p>
+          <p>
+            Once I started discovering just how much there was to the pin
+            collecting hobby, I was hooked. I began learning about different
+            releases, characters, collections, trading, limited editions, and
+            all of the little details that make pins so much fun to collect.
+            Like many collectors, I started out wanting to collect just about
+            every character I loved.
+          </p>
+          <p>
+            Over time, my collections became much more focused. Today, I am an
+            Elemental completist, and Mulan and Baymax are two of my other main
+            collections. My husband and I also share a collection, although I
+            will admit it is mostly his, centered around Star Tours and Star
+            Wars, especially The Clone Wars.
+          </p>
+          <p>
+            His collection has also grown into a fun mix of characters and
+            styles that he simply enjoys. He loves Scrooge McDuck, Genie,
+            interactive pins with features like spinners and sliders, and pretty
+            much anything involving animals. Because of that, our collection as
+            a whole has become a little bit of everything, and I think that is
+            part of what makes collecting so fun.
+          </p>
+          <p>
+            As I continued deeper into the hobby, my collecting style naturally
+            changed. I eventually narrowed down some of the larger collections I
+            had built over the years, including Beauty and the Beast and Raya
+            and the Last Dragon, and started focusing more on the characters and
+            stories that meant the most to me.
+          </p>
+          <p>
+            That was also when I began noticing something that would eventually
+            inspire Great Stone Dragon.
+          </p>
+          <p>
+            There are so many characters, movies, and collections that do not
+            always get the attention they deserve. Disney has an enormous world
+            of characters to celebrate, and naturally, not every favorite can be
+            represented all the time. Sometimes even characters from my own main
+            collections would go long periods without new designs, while other
+            characters I loved might hardly appear at all.
+          </p>
+          <p>
+            That gap is what first drew me toward the world of fantasy pins.
+          </p>
+          <p>
+            I fell in love with the creativity behind them. Fantasy pins offered
+            the opportunity to explore characters and moments in completely
+            different ways, while also incorporating beautiful details and
+            effects that I had grown to love as a collector. Glitter, pearl,
+            translucent elements, different plating finishes, movement, and
+            unique concepts opened up an entirely new creative world for me.
+          </p>
+          <p>
+            Eventually, I decided I wanted to create the kinds of pins I had
+            been searching for myself.
+          </p>
+
+          <h2>The Beginning of Great Stone Dragon</h2>
+          <p>
+            My first series was <em>Enchanted Doorways</em>, beginning with
+            Mulan and Belle.
+          </p>
+          <p>
+            At the time, I could never have imagined how much Great Stone Dragon
+            would grow from those first designs. What started with a few ideas
+            inspired by characters I personally loved has expanded into multiple
+            collections and series, each giving me another opportunity to
+            explore new concepts and celebrate different parts of fandom.
+          </p>
+          <p>
+            One of those ideas eventually became <em>First Class Postage</em>,
+            which has now grown to more than 160 designs.
+          </p>
+          <p>
+            Seeing a single series grow to that scale has been incredibly
+            special, especially knowing that each design represents a character,
+            story, or favorite that someone may have been waiting to see
+            celebrated.
+          </p>
+          <p>
+            And First Class Postage is only one part of what Great Stone Dragon
+            has become. I have continued developing new series, revisiting older
+            concepts, experimenting with different effects, and introducing new
+            ideas as the brand grows.
+          </p>
+
+          <h2>What Great Stone Dragon Means to Me</h2>
+          <p>
+            Great Stone Dragon is a place for collectors who find magic in the
+            characters and stories beyond the spotlight.
+          </p>
+          <p>
+            Every fantasy pin begins with an idea and is thoughtfully developed
+            in collaboration with independent artists. I stay involved throughout
+            the creative process, from the initial concept and artwork to
+            choosing colors, finishes, plating, glitter, pearl, and all of the
+            tiny details that bring a design to life.
+          </p>
+          <p>
+            Being a collector first has shaped nearly every part of the way I
+            create.
+          </p>
+          <p>
+            I know the excitement of seeing one of your favorite characters
+            finally represented. I know what it feels like to hunt for the
+            perfect piece for your collection, discover a design you have never
+            seen before, or find a pin that immediately feels like it belongs on
+            your board.
+          </p>
+          <p>
+            That is the feeling I hope to create through Great Stone Dragon.
+          </p>
+          <p>
+            For me, this brand has become so much more than a pin shop. It is a
+            way to celebrate fandom, creativity, overlooked favorites, and the
+            characters that mean something to each of us.
+          </p>
+          <p>
+            From one Marvel mystery pack at Disneyland to hundreds of designs
+            finding homes in collections around the world, this journey has
+            grown into something I never could have imagined when I bought those
+            first five pins.
+          </p>
+          <p>And there is still so much more I want to create.</p>
+          <p>
+            As Great Stone Dragon continues to grow, I cannot wait to introduce
+            new series, explore new ideas, and continue watching these designs
+            become part of your collections.
           </p>
           <p className="about-story-quote">
-            &quot;Welcome to the journey and thank you for supporting my small
-            shop!&quot;
+            Thank you for allowing something that began as my own love of
+            collecting to become something I get to share with all of you.
           </p>
 
           <h3>Our Commitments</h3>

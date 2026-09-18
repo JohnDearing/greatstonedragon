@@ -1903,12 +1903,21 @@ h6 {
   color: var(--brand);
 }
 
+.about-story-content h2 + h2,
+.about-story-content p + h2 {
+  margin-top: clamp(2.25rem, 5vw, 3.5rem);
+}
+
 .about-story-content > p {
   margin: 1rem 0 0;
   max-width: 62ch;
   font-size: clamp(1rem, 1.8vw, 1.15rem);
   line-height: 1.75;
   color: #2e2e2e;
+}
+
+.about-story-content em {
+  font-style: italic;
 }
 
 .about-story-quote {

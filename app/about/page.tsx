@@ -7,7 +7,7 @@ export default function AboutPage() {
     <>
       <InnerHero
         title="About Us"
-        description="The story behind the studio crafted with love for the collector community."
+        description="From one Disneyland mystery pack to a shop for collectors who find magic beyond the spotlight."
       />
       <TheStory />
       <JoinCtaSection />
