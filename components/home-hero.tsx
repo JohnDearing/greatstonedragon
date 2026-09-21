@@ -8,33 +8,33 @@ import { useEffect, useLayoutEffect, useRef } from "react";
 
 const heroCards = [
   {
-    src: "/images/home/hero-card1.png",
+    src: "/images/home/hero-card1.jpg",
     alt: "Baymax Zodiac",
     href: "/products?collection=fantasy",
   },
   {
-    src: "/images/home/hero-card2.png",
+    src: "/images/home/hero-card2.jpg",
     alt: "Tinies",
     href: "/products",
   },
   {
-    src: "/images/home/hero-card3.png",
+    src: "/images/home/hero-card3.jpg",
     alt: "Cutesy Cravings",
     href: "/products?category=stickers",
   },
   {
-    src: "/images/home/hero-card4.png",
+    src: "/images/home/hero-card4.jpg",
     alt: "Bubble Buddies",
     href: "/products",
   },
   {
-    src: "/images/home/hero-card5.png",
+    src: "/images/home/hero-card5.jpg",
     alt: "Fantasy Pins",
     href: "/products?collection=fantasy",
   },
   {
-    src: "/images/home/hero-card6.png",
-    alt: "Fantasy Collabs",
+    src: "/images/home/hero-card6.jpg",
+    alt: "Fantasy Collaborations",
     href: "/products?collection=new-releases",
   },
 ];

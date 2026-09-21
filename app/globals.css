@@ -630,7 +630,7 @@ select {
   flex-shrink: 0;
   width: 198px;
   height: 198px;
-  border-radius: 1rem;
+  border-radius: .5rem;
   overflow: hidden;
   box-shadow: 0 10px 24px rgba(111, 20, 33, 0.12);
 }

@@ -130,9 +130,9 @@ function HeaderInner() {
   // --- Pin Store Mega menu image overrides ---
   // List according to pinStoreMega mapping order; fallback to old behavior if out of index/unknown.
   const pinMegaImages = [
-    "/images/all_products.png",
-    "/images/international_pins.png",
-    "/images/fantasy_pins.png",
+    "/images/all_products.jpg",
+    "/images/international_pins.jpg",
+    "/images/fantasy_pins.jpg",
   ];
 
   return (
