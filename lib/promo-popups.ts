@@ -1,5 +1,4 @@
 import {
-  isFantasyPreorderCollection,
   isFantasyPreorderProduct,
   isInternationalPreorderProduct,
 } from "@/lib/shop-filters";
@@ -45,16 +44,9 @@ export const PROMO_POPUPS: PromoPopupConfig[] = [
   {
     id: "fantasy-preorder",
     storageKey: "gsd_promo_fantasy_preorder_v1",
-    match: ({ collection, category, page, product }) => {
-      if (page === "product-detail") {
-        return Boolean(product && isFantasyPreorderProduct(product));
-      }
-      return (
-        page === "products" &&
-        !product &&
-        isFantasyPreorderCollection(collection || category)
-      );
-    },
+    match: ({ page, product }) =>
+      page === "product-detail" &&
+      Boolean(product && isFantasyPreorderProduct(product)),
     title: "Fantasy Preorder Alert!",
     body: "You are purchasing a fantasy pin preorder. This item is not currently in production and is expected to ship approximately 3–6 months after the preorder closes, depending on manufacturing timelines and any unforeseen production delays.",
   },
