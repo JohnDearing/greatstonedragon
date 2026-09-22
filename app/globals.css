@@ -893,18 +893,25 @@ select {
   display: block;
   flex: 0 0 calc((100% - (var(--fav-gap) * 2)) / 3);
   min-width: 0;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 1 / 1;
   border-radius: 1.05rem;
   overflow: hidden;
   box-shadow: 0 10px 22px rgba(111, 20, 33, 0.12);
-  background: #f8e7ed;
+  background: #f6dfe5;
 }
 
-.favorite-card img {
+.favorite-card-media {
+  position: absolute;
+  inset: 0;
+}
+
+.favorite-card img,
+.favorite-card-media img {
   max-width: none;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: cover !important;
+  object-position: center center;
 }
 
 .favorite-card em {

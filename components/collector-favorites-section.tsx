@@ -279,12 +279,15 @@ function FavoritesSlider({ cards }: { cards: FavoriteCard[] }) {
               href={card.href}
               className="favorite-card"
             >
-              <ProductImage
-                src={card.src}
-                alt={card.title}
-                fill
-                sizes="(max-width: 760px) 50vw, 220px"
-              />
+              <div className="favorite-card-media">
+                <ProductImage
+                  src={card.src}
+                  alt={card.title}
+                  fill
+                  sizes="(max-width: 760px) 50vw, 220px"
+                  style={{ objectFit: "cover" }}
+                />
+              </div>
               <em>{card.badge || "Bestseller"}</em>
               <div className="favorite-card-meta">
                 <strong>{card.title}</strong>
