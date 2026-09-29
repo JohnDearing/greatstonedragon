@@ -36,7 +36,7 @@ export function StoreFooter() {
         <div className="footer-brand">
           <Link href="/" className="footer-logo" aria-label="Great Stone Dragon home">
             <Image
-              src="/images/logo.png"
+              src="/images/footer_logo.png"
               alt="Great Stone Dragon logo"
               width={92}
               height={92}

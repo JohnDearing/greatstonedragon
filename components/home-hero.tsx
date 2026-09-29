@@ -138,7 +138,7 @@ export function HomeHero() {
   return (
     <section className="hero-wrap" ref={sectionRef}>
       <Image
-        src="/images/home/hero-bg.png"
+        src="/images/hero_bg.png"
         alt=""
         fill
         priority

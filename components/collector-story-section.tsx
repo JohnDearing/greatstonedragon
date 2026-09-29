@@ -144,10 +144,10 @@ export function CollectorStorySection() {
         <div className="story-logo-wrap">
           <div className="story-logo-frame">
             <Image
-              src="/images/logo.png"
+              src="/images/collector_logo.png"
               alt="Great Stone Dragon logo"
-              width={300}
-              height={300}
+              width={500}
+              height={500}
               priority
             />
           </div>

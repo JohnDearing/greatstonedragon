@@ -148,10 +148,10 @@ function HeaderInner() {
           onClick={closeOverlays}
         >
           <Image
-            src="/images/logo.png"
+            src="/images/header_logo.png"
             alt="Great Stone Dragon logo"
-            width={112}
-            height={112}
+            width={320}
+            height={100}
             priority
           />
         </Link>
