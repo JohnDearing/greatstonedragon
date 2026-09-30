@@ -38,8 +38,11 @@ export function StoreFooter() {
             <Image
               src="/images/footer_logo.png"
               alt="Great Stone Dragon logo"
-              width={92}
-              height={92}
+              width={468}
+              height={216}
+              quality={100}
+              unoptimized
+              sizes="(max-width: 760px) 220px, 240px"
             />
           </Link>
           <p>

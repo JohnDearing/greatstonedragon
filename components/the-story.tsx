@@ -32,7 +32,7 @@ const TheStory = () => {
         <aside className="about-story-media-col" aria-label="Studio highlights">
           <div className="about-story-media">
             <Image
-              src="/images/about/story.png"
+              src="/images/story.png"
               alt="Great Stone Dragon studio story visual"
               width={1080}
               height={780}

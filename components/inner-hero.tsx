@@ -4,7 +4,7 @@ interface InnerHeroProps {
 }
 
 const InnerHero = ({ title, description }: InnerHeroProps) => {
-  const backgroundImageUrl = "/images/about/about-bg.png";
+  const backgroundImageUrl = "/images/about_bg.png";
 
   return (
     <section
