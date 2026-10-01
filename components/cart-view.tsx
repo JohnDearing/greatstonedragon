@@ -27,6 +27,9 @@ function CartLine({
   const href = item.href ?? `/products/${item.slug}`;
   const imageSrc = item.image ?? "/images/product/product1.png";
   const maxQty = item.quantityMaximum ?? null;
+  const hasDiscount = item.discountAmount > 0.004;
+  const showCompareTotal =
+    hasDiscount && item.lineSubtotal > item.lineTotal + 0.004;
 
   const handleUpdateQty = async (qty: number) => {
     if (maxQty != null && qty > maxQty) {
@@ -44,7 +47,7 @@ function CartLine({
   };
 
   return (
-    <article className="cart-line">
+    <article className={`cart-line${hasDiscount ? " has-discount" : ""}`}>
       <Link href={href} className="cart-line-media" aria-label={item.name}>
         <ProductImage
           src={imageSrc}
@@ -64,6 +67,12 @@ function CartLine({
           <p className="cart-line-subtitle">{item.subtitle}</p>
         ) : null}
         <p className="cart-line-price">{money(item.price)} each</p>
+        {hasDiscount ? (
+          <p className="cart-line-discount">
+            {item.discountTitle || "Discount applied"} (−
+            {money(item.discountAmount)})
+          </p>
+        ) : null}
       </div>
 
       <div className="cart-line-actions">
@@ -88,7 +97,12 @@ function CartLine({
             +
           </button>
         </div>
-        <p className="cart-line-total">{money(item.lineTotal)}</p>
+        <p className="cart-line-total">
+          {showCompareTotal ? (
+            <span className="cart-line-compare">{money(item.lineSubtotal)}</span>
+          ) : null}
+          {money(item.lineTotal)}
+        </p>
         <button
           type="button"
           className="cart-line-remove"
@@ -107,6 +121,9 @@ export function CartView() {
     items,
     count,
     subtotal,
+    merchandiseSubtotal,
+    discountTotal,
+    discounts,
     checkoutUrl,
     loading,
     updateQty,
@@ -116,6 +133,7 @@ export function CartView() {
   const termsId = useId();
   const termsRef = useRef<HTMLInputElement>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const hasDiscount = discountTotal > 0.004;
 
   const showTermsRequiredToast = useCallback(() => {
     showStoreAlert(CHECKOUT_TERMS_MESSAGE);
@@ -206,11 +224,33 @@ export function CartView() {
           <p className="cart-summary-kicker">Order summary</p>
           <h2>Total</h2>
 
+          {hasDiscount ? (
+            <div className="cart-savings-banner" role="status">
+              <span>Discount applied</span>
+              <strong>You save {money(discountTotal)}</strong>
+            </div>
+          ) : null}
+
           <div className="cart-summary-rows">
             <div className="cart-summary-row">
               <span>Subtotal</span>
-              <strong>{money(subtotal)}</strong>
+              <strong>
+                {money(hasDiscount ? merchandiseSubtotal : subtotal)}
+              </strong>
             </div>
+            {hasDiscount
+              ? (discounts.length ? discounts : [{ title: "Discount", amount: discountTotal }]).map(
+                  (discount) => (
+                    <div
+                      key={`${discount.title}-${discount.amount}`}
+                      className="cart-summary-row is-discount"
+                    >
+                      <span>{discount.title}</span>
+                      <strong>−{money(discount.amount)}</strong>
+                    </div>
+                  ),
+                )
+              : null}
             <div className="cart-summary-row is-muted">
               <span>Shipping</span>
               <span>Calculated at checkout</span>
@@ -226,10 +266,15 @@ export function CartView() {
             <strong>{money(subtotal)}</strong>
           </div>
 
+          {hasDiscount ? (
+            <p className="cart-summary-savings">
+              Total savings {money(discountTotal)}
+            </p>
+          ) : null}
+
           <p className="cart-summary-disclaimer">
             Taxes and shipping calculated at checkout
           </p>
-
           <label className="cart-agreement" htmlFor={termsId}>
             <input
               ref={termsRef}

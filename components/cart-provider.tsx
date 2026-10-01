@@ -24,6 +24,9 @@ export type CartLineItem = {
   price: number;
   qty: number;
   lineTotal: number;
+  lineSubtotal: number;
+  discountAmount: number;
+  discountTitle?: string;
   quantityMaximum?: number | null;
   quantityAvailable?: number | null;
   image?: string;
@@ -48,6 +51,9 @@ type CartContextValue = {
   items: CartLineItem[];
   count: number;
   subtotal: number;
+  merchandiseSubtotal: number;
+  discountTotal: number;
+  discounts: { title: string; amount: number }[];
   checkoutUrl: string | null;
   loading: boolean;
   addItem: (
@@ -96,6 +102,9 @@ function mapShopifyLines(cart: ShopifyCart | null): CartLineItem[] {
     price: line.price,
     qty: line.qty,
     lineTotal: line.lineTotal,
+    lineSubtotal: line.lineSubtotal,
+    discountAmount: line.discountAmount,
+    discountTitle: line.discountTitle,
     quantityMaximum: line.quantityMaximum,
     quantityAvailable: line.quantityAvailable,
     image: line.image,
@@ -329,11 +338,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const items = mapShopifyLines(shopifyCart);
     const count = shopifyCart?.totalQuantity ?? 0;
     const subtotal = shopifyCart?.subtotal ?? 0;
+    const merchandiseSubtotal = shopifyCart?.merchandiseSubtotal ?? subtotal;
+    const discountTotal = shopifyCart?.discountTotal ?? 0;
+    const discounts = shopifyCart?.discounts ?? [];
 
     return {
       items,
       count,
       subtotal,
+      merchandiseSubtotal,
+      discountTotal,
+      discounts,
       checkoutUrl: shopifyCart?.checkoutUrl ?? null,
       loading,
       addItem,

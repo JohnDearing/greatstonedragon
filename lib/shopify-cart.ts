@@ -1,5 +1,10 @@
 import { storefrontGraphql } from "./shopify";
 
+export type ShopifyCartDiscount = {
+  title: string;
+  amount: number;
+};
+
 export type ShopifyCartLine = {
   lineId: string;
   variantId: string;
@@ -9,6 +14,10 @@ export type ShopifyCartLine = {
   price: number;
   qty: number;
   lineTotal: number;
+  /** Pre-discount merchandise total for this line (unit price × qty). */
+  lineSubtotal: number;
+  discountAmount: number;
+  discountTitle?: string;
   quantityMaximum?: number | null;
   quantityAvailable?: number | null;
   image?: string;
@@ -24,11 +33,37 @@ export type ShopifyCart = {
   id: string;
   checkoutUrl: string;
   totalQuantity: number;
+  /** Paid merchandise total after discounts (shipping/tax excluded). */
   subtotal: number;
+  /** Merchandise total before discounts. */
+  merchandiseSubtotal: number;
+  /** Total automatic/code discount amount applied to the cart. */
+  discountTotal: number;
+  discounts: ShopifyCartDiscount[];
   currencyCode: string;
   lines: ShopifyCartLine[];
   warnings?: ShopifyCartWarning[];
 };
+
+const MONEY_FIELDS = `
+  amount
+  currencyCode
+`;
+
+const DISCOUNT_ALLOCATION_FIELDS = `
+  discountedAmount {
+    ${MONEY_FIELDS}
+  }
+  ... on CartAutomaticDiscountAllocation {
+    title
+  }
+  ... on CartCodeDiscountAllocation {
+    code
+  }
+  ... on CartCustomDiscountAllocation {
+    title
+  }
+`;
 
 const CART_FIELDS = `
   id
@@ -36,13 +71,14 @@ const CART_FIELDS = `
   totalQuantity
   cost {
     subtotalAmount {
-      amount
-      currencyCode
+      ${MONEY_FIELDS}
     }
     totalAmount {
-      amount
-      currencyCode
+      ${MONEY_FIELDS}
     }
+  }
+  discountAllocations {
+    ${DISCOUNT_ALLOCATION_FIELDS}
   }
   lines(first: 50) {
     nodes {
@@ -52,14 +88,27 @@ const CART_FIELDS = `
         key
         value
       }
+      cost {
+        amountPerQuantity {
+          ${MONEY_FIELDS}
+        }
+        subtotalAmount {
+          ${MONEY_FIELDS}
+        }
+        totalAmount {
+          ${MONEY_FIELDS}
+        }
+      }
+      discountAllocations {
+        ${DISCOUNT_ALLOCATION_FIELDS}
+      }
       merchandise {
         ... on ProductVariant {
           id
           title
           quantityAvailable
           price {
-            amount
-            currencyCode
+            ${MONEY_FIELDS}
           }
           quantityRule {
             maximum
@@ -80,23 +129,38 @@ const CART_FIELDS = `
   }
 `;
 
+type MoneyNode = { amount?: string; currencyCode?: string } | null | undefined;
+
+type DiscountAllocationNode = {
+  discountedAmount?: MoneyNode;
+  title?: string | null;
+  code?: string | null;
+};
+
 type CartNode = {
   id: string;
   checkoutUrl: string;
   totalQuantity: number;
   cost?: {
-    subtotalAmount?: { amount: string; currencyCode?: string };
-    totalAmount?: { amount: string; currencyCode?: string };
+    subtotalAmount?: MoneyNode;
+    totalAmount?: MoneyNode;
   };
+  discountAllocations?: DiscountAllocationNode[] | null;
   lines?: {
     nodes: {
       id: string;
       quantity: number;
       attributes?: { key: string; value: string }[];
+      cost?: {
+        amountPerQuantity?: MoneyNode;
+        subtotalAmount?: MoneyNode;
+        totalAmount?: MoneyNode;
+      } | null;
+      discountAllocations?: DiscountAllocationNode[] | null;
       merchandise?: {
         id?: string;
         title?: string;
-        price?: { amount: string };
+        price?: MoneyNode;
         quantityAvailable?: number | null;
         quantityRule?: { maximum?: number | null } | null;
         image?: { url?: string } | null;
@@ -109,6 +173,30 @@ type CartNode = {
     }[];
   };
 };
+
+function moneyAmount(value: MoneyNode) {
+  return Number(value?.amount ?? 0);
+}
+
+function discountTitle(allocation: DiscountAllocationNode) {
+  const title = allocation.title?.trim() || allocation.code?.trim();
+  return title || "Discount";
+}
+
+function mapDiscounts(
+  allocations: DiscountAllocationNode[] | null | undefined,
+): ShopifyCartDiscount[] {
+  const byTitle = new Map<string, number>();
+
+  for (const allocation of allocations ?? []) {
+    const amount = moneyAmount(allocation.discountedAmount);
+    if (amount <= 0) continue;
+    const title = discountTitle(allocation);
+    byTitle.set(title, (byTitle.get(title) ?? 0) + amount);
+  }
+
+  return [...byTitle.entries()].map(([title, amount]) => ({ title, amount }));
+}
 
 function publicCheckoutUrl(url: string) {
   const storefront = process.env.SHOPIFY_STOREFRONT_URL?.replace(/\/$/, "");
@@ -146,6 +234,29 @@ function mapCart(
         (value): value is number => value != null && value > 0,
       );
 
+      const catalogTotal = unitPrice * line.quantity;
+      const apiLineSubtotal = moneyAmount(line.cost?.subtotalAmount);
+      const apiLineTotal = moneyAmount(line.cost?.totalAmount);
+      const lineDiscounts = mapDiscounts(line.discountAllocations);
+      const allocatedDiscount = lineDiscounts.reduce(
+        (sum, item) => sum + item.amount,
+        0,
+      );
+
+      // Prefer catalog price as the pre-discount amount so savings stay visible
+      // even when Shopify's line cost fields are already discounted.
+      const lineSubtotal = Math.max(catalogTotal, apiLineSubtotal);
+      const lineTotal = Math.min(
+        lineSubtotal,
+        apiLineTotal > 0
+          ? apiLineTotal
+          : allocatedDiscount > 0
+            ? Math.max(0, lineSubtotal - allocatedDiscount)
+            : lineSubtotal,
+      );
+      const discountAmount =
+        allocatedDiscount || Math.max(0, lineSubtotal - lineTotal);
+
       return {
         lineId: line.id,
         variantId: merch.id,
@@ -154,7 +265,10 @@ function mapCart(
         subtitle: variantTitle || undefined,
         price: unitPrice,
         qty: line.quantity,
-        lineTotal: unitPrice * line.quantity,
+        lineTotal,
+        lineSubtotal,
+        discountAmount,
+        discountTitle: lineDiscounts[0]?.title,
         quantityAvailable,
         quantityMaximum: caps.length ? Math.min(...caps) : ruleMax,
         image:
@@ -166,11 +280,51 @@ function mapCart(
     })
     .filter(Boolean) as ShopifyCartLine[];
 
+  const merchandiseSubtotal = lines.reduce(
+    (sum, line) => sum + line.lineSubtotal,
+    0,
+  );
+  const apiSubtotal = Number(node.cost?.subtotalAmount?.amount ?? 0);
+  const discounts = mapDiscounts(node.discountAllocations);
+  const discountFromAllocations = discounts.reduce(
+    (sum, item) => sum + item.amount,
+    0,
+  );
+  const discountFromLines = lines.reduce(
+    (sum, line) => sum + line.discountAmount,
+    0,
+  );
+  const discountTotal = Math.max(
+    discountFromAllocations,
+    discountFromLines,
+    Math.max(0, merchandiseSubtotal - apiSubtotal),
+  );
+  const subtotal = lines.length
+    ? Math.max(0, merchandiseSubtotal - discountTotal)
+    : apiSubtotal;
+
+  const resolvedDiscounts =
+    discounts.length > 0
+      ? discounts
+      : discountTotal > 0
+        ? [
+            {
+              title:
+                lines.find((line) => line.discountTitle)?.discountTitle ||
+                "Discount",
+              amount: discountTotal,
+            },
+          ]
+        : [];
+
   return {
     id: node.id,
     checkoutUrl: publicCheckoutUrl(node.checkoutUrl),
     totalQuantity: node.totalQuantity,
-    subtotal: Number(node.cost?.subtotalAmount?.amount ?? 0),
+    subtotal,
+    merchandiseSubtotal,
+    discountTotal,
+    discounts: resolvedDiscounts,
     currencyCode:
       node.cost?.subtotalAmount?.currencyCode ??
       node.cost?.totalAmount?.currencyCode ??
