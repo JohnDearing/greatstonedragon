@@ -163,7 +163,7 @@ export function HomeHero() {
             <Link href="/products?collection=new-releases" className="cta-button">
               Shop New Releases
             </Link>
-            <Link href="/products" className="soft-button">
+            <Link href="/products" className="cta-button">
               Best Sellers
             </Link>
           </div>
